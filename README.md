@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+cat > README.md << 'EOF'
+# Rapid Tie Payment Gateway
 
-## Getting Started
+## 🚀 Overview
 
-First, run the development server:
+**Rapid Tie Payment Gateway** is VaultString's comprehensive payment processing solution designed for Malawi. The platform serves three strategic use cases:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **E-commerce Solutions** - Unified payment collection for online businesses
+- **Event Ticketing** - End-to-end ticket sales and management
+- **DSA Disbursement** - Automated Daily Subsistence Allowance payments
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📋 Project Status
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Phase | Focus | Duration | Status |
+|-------|-------|----------|--------|
+| Phase 1 | Foundation & Core Infrastructure | Weeks 1-8 | 🔄 In Progress |
+| Phase 2 | E-Commerce & Merchant Dashboard | Weeks 9-18 | ⏳ Planned |
+| Phase 3 | Event Ticketing Platform | Weeks 19-28 | ⏳ Planned |
+| Phase 4 | DSA Disbursement Platform | Weeks 29-38 | ⏳ Planned |
+| Phase 5 | Cross-Platform Event Hub | Weeks 39-44 | ⏳ Planned |
+| Phase 6 | Admin & Monitoring | Weeks 45-48 | ⏳ Planned |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Technology Stack
 
-## Learn More
+- **Frontend:** Next.js 14, React 18, TypeScript, Tailwind CSS
+- **State Management:** React Query, Zustand
+- **Forms:** React Hook Form, Zod
+- **Authentication:** NextAuth.js
+- **Styling:** Custom design system with dark mode
+- **Testing:** Jest, React Testing Library, Cypress
 
-To learn more about Next.js, take a look at the following resources:
+## 🎨 Design System
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The Rapid Tie design system is built on three foundations:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Colors
+- **Primary Green:** `#448a33` - Dominant brand color
+- **Primary Blue:** `#3b5a65` - Secondary brand color
+- **Semantic Colors:** Success, Error, Warning, Info (WCAG 2.1 AA compliant)
 
-## Deploy on Vercel
+### Typography
+- **Font Family:** Inter (primary), Roboto Mono (monospace)
+- **Scale:** h1-h6, body, caption, button, label
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Spacing
+- **Base Unit:** 4px grid
+- **Scale:** xs (4px) to 4xl (80px)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📁 Project Structure
