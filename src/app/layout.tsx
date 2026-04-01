@@ -1,25 +1,30 @@
-import type { Metadata } from 'next'
-import './globals.css'
+﻿import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import Footer from '@/components/layout/Footer';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Rapid Tie Payment Gateway',
-  description: 'Secure, seamless payment processing for Malawi',
-  icons: {
-    // Use your custom icon or set to null to prevent default requests
-    icon: '/vault.png',  // Use your logo as favicon
-    // Or if you don't have a favicon, use a data URI
-    // icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>',
-  },
-}
+  title: 'Rapid Tie Gateway',
+  description: 'Secure, fast, and transparent payment processing for Malawi',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>
+        <div className="flex flex-col min-h-screen">
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </div>
+      </body>
     </html>
-  )
+  );
 }
