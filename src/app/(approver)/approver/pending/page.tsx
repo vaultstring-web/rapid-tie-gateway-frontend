@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,16 @@ import {
 import Link from 'next/link';
 import { MOCK_REQUESTS } from '@/mock/mockData';
 import { cn } from '@/lib/utils';
+
+// Format currency to Malawian Kwacha (MWK)
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-MW', {
+    style: 'currency',
+    currency: 'MWK',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 export default function PendingApprovals() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -55,7 +65,7 @@ export default function PendingApprovals() {
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'High': return 'text-red-600 bg-red-50 border-red-200';
-      case 'Medium': return 'text-amber-600 bg-amber-50 border-amber-200';
+      case 'Medium': return 'text-orange-600 bg-orange-50 border-orange-200';
       case 'Low': return 'text-blue-600 bg-blue-50 border-blue-200';
       default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -171,7 +181,7 @@ export default function PendingApprovals() {
             filteredRequests.map((req) => (
               <div key={req.id} className={cn(
                 "rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 border-l-4",
-                req.urgency === 'High' ? "border-red-500" : req.urgency === 'Medium' ? "border-amber-500" : "border-blue-500"
+                req.urgency === 'High' ? "border-red-500" : req.urgency === 'Medium' ? "border-orange-500" : "border-blue-500"
               )}>
                 <div className="p-4 flex items-center gap-4">
                   <button onClick={() => toggleSelect(req.id)} className="text-gray-400 hover:text-[#3b5a65]">
@@ -196,7 +206,7 @@ export default function PendingApprovals() {
 
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-gray-400 uppercase">Amount</span>
-                      <span className="text-sm font-bold text-gray-900">${req.amount.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-gray-900">{formatCurrency(req.amount)}</span>
                     </div>
 
                     <div className="flex items-center justify-end gap-3">
