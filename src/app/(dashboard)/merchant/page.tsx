@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { 
   DollarSign, 
   Users, 
@@ -21,22 +21,14 @@ import {
   Tooltip, 
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
-  TooltipProps
+  ReferenceLine
 } from 'recharts';
-import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { motion } from 'framer-motion';
 
-/* 1. MOCK DATA & TYPES */
-interface ChartData {
-  name: string;
-  revenue: number;
-  event?: string;
-}
-
-const RAW_DATA: ChartData[] = [
+// Mock data
+const RAW_DATA = [
   { name: 'Mon', revenue: 4000 },
-  { name: 'Tue', revenue: 7800, event: "Pay Day Spike" }, // Today's Spike
+  { name: 'Tue', revenue: 7800, event: "Pay Day Spike" },
   { name: 'Wed', revenue: 2000 },
   { name: 'Thu', revenue: 2780 },
   { name: 'Fri', revenue: 1890 },
@@ -54,14 +46,14 @@ const MOCK_TRANSACTIONS = [
   { id: 'tx2', customer: { name: 'Tiwonge Phiri', email: 't.phiri@outlook.com' }, event: 'VIP Pass', amount: 120000, status: 'pending', date: '2026-03-30' },
 ];
 
-/* 2. CUSTOM TOOLTIP */
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
-  if (!active || !payload?.length) return null;
-  const data = payload[0].payload as ChartData;
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0].payload;
   return (
     <div className="bg-white p-4 rounded-xl shadow-xl border border-gray-100">
       <p className="text-xs font-black text-gray-400 uppercase mb-2">{label}</p>
-      <p className="text-lg font-bold text-gray-900">K{data.revenue.toLocaleString()}</p>
+      <p className="text-lg font-bold text-gray-900">K{data.revenue?.toLocaleString()}</p>
       {data.event && (
         <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1">
           <Zap size={10}/> {data.event}
@@ -74,9 +66,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameT
 export default function MerchantDashboard() {
   const [range, setRange] = useState<number>(7);
   const [isExporting, setIsExporting] = useState<boolean>(false);
-
-  // Requirement: Today (Tuesday) is Lime Green
-  const todayName = "Tue"; 
+  const todayName = "Tue";
 
   const handleExport = () => {
     setIsExporting(true);
@@ -88,8 +78,6 @@ export default function MerchantDashboard() {
 
   return (
     <div className="space-y-8 p-6 bg-[#fcfcfc] min-h-screen">
-      
-      {/* PRINT ENGINE CSS */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body * { visibility: hidden; }
@@ -139,7 +127,7 @@ export default function MerchantDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Revenue Chart Section */}
+          {/* Revenue Chart */}
           <div className="lg:col-span-2 p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-bold text-gray-900">Revenue Overview</h3>
@@ -155,12 +143,9 @@ export default function MerchantDashboard() {
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v: number) => `K${v/1000}k`} />
                   <Tooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip />} />
-                  
-                  {/* Event Overlay */}
                   {RAW_DATA.map((d, i) => d.event && (
                     <ReferenceLine key={i} x={d.name} stroke="#f59e0b" strokeDasharray="3 3" label={{ position: 'top', value: d.event, fill: '#d97706', fontSize: 10, fontWeight: 800 }} />
                   ))}
-
                   <Bar dataKey="revenue" radius={[6, 6, 0, 0]} isAnimationActive={!isExporting}>
                     {RAW_DATA.slice(-range).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.name === todayName ? '#84cc16' : '#3b5a65'} />
@@ -171,7 +156,7 @@ export default function MerchantDashboard() {
             </div>
           </div>
 
-          {/* EVENTS TO SPONSOR SECTION (Restored) */}
+          {/* Events to Sponsor */}
           <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-bold text-gray-900">Events to Sponsor</h3>
@@ -184,9 +169,7 @@ export default function MerchantDashboard() {
                     <img src={event.image} alt={event.name} className="w-16 h-16 rounded-2xl object-cover shadow-sm" />
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-bold text-gray-900 truncate group-hover:text-[#84cc16] transition-colors">{event.name}</h4>
-                      <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-1 font-medium">
-                        <Calendar size={12} /> {event.date}
-                      </p>
+                      <p className="text-[10px] text-gray-500 flex items-center gap-1 mt-1 font-medium"><Calendar size={12} /> {event.date}</p>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs font-black text-[#3b5a65]">K{(event.sponsorAmount/1000000).toFixed(1)}M</span>
                         <span className="px-2 py-0.5 bg-green-50 text-green-600 text-[9px] font-black rounded-full uppercase tracking-tighter">High Impact</span>
@@ -196,13 +179,11 @@ export default function MerchantDashboard() {
                 </div>
               ))}
             </div>
-            <button className="w-full mt-8 py-3 border border-gray-100 rounded-2xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors">
-              Explore More Events
-            </button>
+            <button className="w-full mt-8 py-3 border border-gray-100 rounded-2xl text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors">Explore More Events</button>
           </div>
         </div>
 
-        {/* RECENT TRANSACTIONS SECTION */}
+        {/* Recent Transactions */}
         <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden">
           <div className="flex items-center justify-between mb-8">
             <h3 className="font-bold text-gray-900">Recent Transactions</h3>
@@ -212,39 +193,17 @@ export default function MerchantDashboard() {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-50">
-                  <th className="pb-4">Customer</th>
-                  <th className="pb-4">Event</th>
-                  <th className="pb-4">Amount</th>
-                  <th className="pb-4">Status</th>
-                  <th className="pb-4 text-right">Action</th>
+                  <th className="pb-4">Customer</th><th className="pb-4">Event</th><th className="pb-4">Amount</th><th className="pb-4">Status</th><th className="pb-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {MOCK_TRANSACTIONS.map((tx) => (
                   <tr key={tx.id} className="group hover:bg-gray-50 transition-colors">
-                    <td className="py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-400 uppercase">
-                          {tx.customer.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{tx.customer.name}</p>
-                          <p className="text-[10px] text-gray-500 font-medium">{tx.customer.email}</p>
-                        </div>
-                      </div>
-                    </td>
+                    <td className="py-5"><div className="flex items-center gap-3"><div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-400 uppercase">{tx.customer.name.charAt(0)}</div><div><p className="text-sm font-bold text-gray-900">{tx.customer.name}</p><p className="text-[10px] text-gray-500 font-medium">{tx.customer.email}</p></div></div></td>
                     <td className="py-5 text-sm text-gray-600 font-medium">{tx.event}</td>
                     <td className="py-5 text-sm font-black text-gray-900">K{tx.amount.toLocaleString()}</td>
-                    <td className="py-5">
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${
-                        tx.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {tx.status}
-                      </span>
-                    </td>
-                    <td className="py-5 text-right">
-                      <button className="p-2 text-gray-300 hover:text-[#84cc16] transition-colors"><ExternalLink size={16} /></button>
-                    </td>
+                    <td className="py-5"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${tx.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>{tx.status}</span></td>
+                    <td className="py-5 text-right"><button className="p-2 text-gray-300 hover:text-[#84cc16] transition-colors"><ExternalLink size={16} /></button></td>
                   </tr>
                 ))}
               </tbody>

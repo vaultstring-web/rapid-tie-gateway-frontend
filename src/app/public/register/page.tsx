@@ -18,10 +18,10 @@ import {
   businessDetailsSchema,
   contactInfoSchema,
 } from '@/lib/validation/registration';
-import { authService } from '@/services/auth.service';
 import toast from 'react-hot-toast';
 
 export default function RegistrationPage() {
+  const router = useRouter();
   const {
     currentStep,
     accountType,
@@ -100,7 +100,11 @@ export default function RegistrationPage() {
         if (error?.response?.data?.errors) {
           const formatted: Partial<Record<keyof typeof contactInfo, string>> = {};
           error.response.data.errors.forEach((err: any) => {
-            if (err.field) formatted[err.field] = err.message;
+            // FIX: Type-guard 'err.field' against 'contactInfo' keys to satisfy TypeScript
+            if (err.field && err.field in contactInfo) {
+              const key = err.field as keyof typeof contactInfo;
+              formatted[key] = err.message;
+            }
           });
           setStep3Errors(formatted);
         } else {
@@ -206,7 +210,7 @@ export default function RegistrationPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 group mb-6">
             <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105">
-              <Image src="/vault.png" alt="Rapid Tie" width={100} height={100} className="" />
+              <Image src="/vault.png" alt="Rapid Tie" width={100} height={100} />
             </div>
             <div className="text-left">
               <span className="text-h6 font-bold text-neutral-900">Rapid Tie</span>
@@ -247,12 +251,6 @@ export default function RegistrationPage() {
                 )}
               </div>
             ))}
-          </div>
-          <div className="text-center mt-4 md:hidden">
-            <p className="text-body-sm font-medium text-primary-green-600">
-              Step {currentStep} of 4: {steps[currentStep - 1].title}
-            </p>
-            <p className="text-caption text-neutral-500">{steps[currentStep - 1].description}</p>
           </div>
         </div>
 
@@ -307,15 +305,15 @@ export default function RegistrationPage() {
             </AnimatePresence>
 
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-              <Button variant="secondary" onClick={handlePreviousStep} disabled={currentStep === 1}>
+              <Button variant="secondary" onClick={handlePreviousStep} disabled={currentStep === 1 || loading}>
                 <ArrowLeftIcon className="w-4 h-4 mr-1" /> Previous
               </Button>
               <div className="flex items-center gap-3">
                 <p className="text-caption text-neutral-500 mt-1">
                   {isStepComplete(currentStep) ? 'Step complete' : 'Step incomplete'}
                 </p>
-                <Button onClick={handleNextStep}>
-                  {currentStep < 4 ? 'Next' : 'Finish'} <ArrowRightIcon className="w-4 h-4 ml-1" />
+                <Button onClick={handleNextStep} loading={loading}>
+                  {currentStep < 3 ? 'Next' : currentStep === 3 ? 'Register' : 'Finish'} <ArrowRightIcon className="w-4 h-4 ml-1" />
                 </Button>
               </div>
             </div>
