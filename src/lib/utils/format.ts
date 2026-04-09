@@ -1,3 +1,4 @@
+
 export const formatCurrency = (amount: number, currency: string = 'MWK'): string => {
   return new Intl.NumberFormat('en-MW', {
     style: 'currency',

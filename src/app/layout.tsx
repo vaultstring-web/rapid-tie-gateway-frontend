@@ -1,34 +1,30 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { Providers } from './providers'
+﻿import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { Providers } from './providers';
+import { ThemeProvider } from '@/context/ThemeContext';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Rapid Tie Payment Gateway - VaultString',
-  description: 'Secure, seamless payment processing for Malawi - Powering e-commerce, events, and DSA disbursements',
-  keywords: 'payment gateway, Malawi, fintech, e-commerce, event ticketing, DSA disbursement',
-  authors: [{ name: 'VaultString' }],
-  openGraph: {
-    title: 'Rapid Tie Payment Gateway',
-    description: 'Secure payments for Malawi businesses, events, and organizations',
-    type: 'website',
-  },
-}
+  description: 'Secure, seamless payment processing for Malawi',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>
-          {children}
-        </Providers>
+        <ThemeProvider>
+          <Providers>
+            {children}
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

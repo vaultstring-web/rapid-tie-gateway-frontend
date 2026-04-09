@@ -1,7 +1,5 @@
-import type { Config } from 'tailwindcss'
-import { theme } from './src/styles/theme'
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -11,79 +9,131 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          green: theme.colors.primary.green,
-          blue: theme.colors.primary.blue,
+          green: {
+            50: '#f0f9eb',
+            100: '#d9f0d0',
+            200: '#b8e2a8',
+            300: '#8bcf75',
+            400: '#5fba4c',
+            500: '#448a33',
+            600: '#367028',
+            700: '#2c5720',
+            800: '#234419',
+            900: '#1b3614',
+          },
+          blue: {
+            50: '#f0f5f6',
+            100: '#d5e4e7',
+            200: '#b3cdd4',
+            300: '#8ab1bc',
+            400: '#6395a3',
+            500: '#3b5a65',
+            600: '#314c55',
+            700: '#273e45',
+            800: '#1e3137',
+            900: '#16252a',
+          },
         },
-        semantic: theme.colors.semantic,
-        neutral: theme.colors.neutral,
-        dark: theme.colors.dark,
-      },
-      spacing: {
-        '2xs': `${theme.spacing.scale.xs}px`,
-        'xs': `${theme.spacing.scale.sm}px`,
-        'sm': `${theme.spacing.scale.md}px`,
-        'md': `${theme.spacing.scale.lg}px`,
-        'lg': `${theme.spacing.scale.xl}px`,
-        'xl': `${theme.spacing.scale['2xl']}px`,
-        '2xl': `${theme.spacing.scale['3xl']}px`,
-        '3xl': `${theme.spacing.scale['4xl']}px`,
+        semantic: {
+          success: {
+            light: '#d4edda',
+            main: '#28a745',
+            dark: '#1e7e34',
+            text: '#155724',
+          },
+          error: {
+            light: '#f8d7da',
+            main: '#dc3545',
+            dark: '#c82333',
+            text: '#721c24',
+          },
+          warning: {
+            light: '#fff3cd',
+            main: '#ffc107',
+            dark: '#e0a800',
+            text: '#856404',
+          },
+          info: {
+            light: '#d1ecf1',
+            main: '#17a2b8',
+            dark: '#138496',
+            text: '#0c5460',
+          },
+        },
+        neutral: {
+          0: '#ffffff',
+          50: '#f8f9fa',
+          100: '#f1f3f5',
+          200: '#e9ecef',
+          300: '#dee2e6',
+          400: '#ced4da',
+          500: '#adb5bd',
+          600: '#6c757d',
+          700: '#495057',
+          800: '#343a40',
+          900: '#212529',
+          1000: '#000000',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         mono: ['Roboto Mono', 'monospace'],
       },
       fontSize: {
-        'h1': ['3rem', { lineHeight: '1.2', fontWeight: '700', letterSpacing: '-0.02em' }],
-        'h2': ['2.25rem', { lineHeight: '1.25', fontWeight: '700', letterSpacing: '-0.01em' }],
-        'h3': ['1.75rem', { lineHeight: '1.3', fontWeight: '600' }],
-        'h4': ['1.5rem', { lineHeight: '1.35', fontWeight: '600' }],
-        'h5': ['1.25rem', { lineHeight: '1.4', fontWeight: '600' }],
-        'h6': ['1rem', { lineHeight: '1.5', fontWeight: '600' }],
-        'body-lg': ['1.125rem', { lineHeight: '1.6' }],
-        'body': ['1rem', { lineHeight: '1.6' }],
-        'body-sm': ['0.875rem', { lineHeight: '1.57' }],
-        'caption': ['0.75rem', { lineHeight: '1.5', letterSpacing: '0.02em' }],
+        h1: '3rem',
+        h2: '2.25rem',
+        h3: '1.75rem',
+        h4: '1.5rem',
+        h5: '1.25rem',
+        h6: '1rem',
+        'body-large': '1.125rem',
+        body: '1rem',
+        'body-sm': '0.875rem',
+        caption: '0.75rem',
+      },
+      spacing: {
+        xs: '4px',
+        sm: '8px',
+        md: '16px',
+        lg: '24px',
+        xl: '32px',
+        '2xl': '48px',
+        '3xl': '64px',
+        '4xl': '80px',
       },
       boxShadow: {
-        'sm': theme.shadows.sm,
-        'md': theme.shadows.md,
-        'lg': theme.shadows.lg,
-        'xl': theme.shadows.xl,
+        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
       },
       borderRadius: {
-        'sm': theme.borderRadius.sm,
-        'md': theme.borderRadius.md,
-        'lg': theme.borderRadius.lg,
-        'xl': theme.borderRadius.xl,
-        'full': theme.borderRadius.full,
-      },
-      screens: {
-        'mobile': theme.breakpoints.mobile,
-        'tablet': theme.breakpoints.tablet,
-        'desktop': theme.breakpoints.desktop,
-      },
-      animation: {
-        'slide-up': 'slideUp 0.3s ease-out',
-        'slide-down': 'slideDown 0.3s ease-out',
-        'fade-in': 'fadeIn 0.3s ease-out',
+        sm: '0.125rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
+        full: '9999px',
       },
       keyframes: {
-        slideUp: {
+        'slide-up': {
           '0%': { transform: 'translateY(20px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
-        slideDown: {
+        'slide-down': {
           '0%': { transform: 'translateY(-20px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
-        fadeIn: {
+        'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+      },
+      animation: {
+        'slide-up': 'slide-up 0.5s ease-out',
+        'slide-down': 'slide-down 0.5s ease-out',
+        'fade-in': 'fade-in 0.5s ease-out',
       },
     },
   },
   plugins: [],
 }
-
-export default config
