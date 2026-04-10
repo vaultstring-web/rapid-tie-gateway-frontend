@@ -21,10 +21,8 @@ import {
   Tooltip, 
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
-  TooltipProps
+  ReferenceLine
 } from 'recharts';
-import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { motion } from 'framer-motion';
 
 /* 1. MOCK DATA & TYPES */
@@ -54,8 +52,8 @@ const MOCK_TRANSACTIONS = [
   { id: 'tx2', customer: { name: 'Tiwonge Phiri', email: 't.phiri@outlook.com' }, event: 'VIP Pass', amount: 120000, status: 'pending', date: '2026-03-30' },
 ];
 
-/* 2. CUSTOM TOOLTIP */
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+/* 2. CUSTOM TOOLTIP - Fixed TypeScript */
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as ChartData;
   return (
@@ -171,7 +169,7 @@ export default function MerchantDashboard() {
             </div>
           </div>
 
-          {/* EVENTS TO SPONSOR SECTION (Restored) */}
+          {/* EVENTS TO SPONSOR SECTION */}
           <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <h3 className="font-bold text-gray-900">Events to Sponsor</h3>
