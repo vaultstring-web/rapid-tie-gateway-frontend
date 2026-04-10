@@ -55,10 +55,8 @@ import {
   Tooltip, 
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
-  TooltipProps
+  ReferenceLine
 } from 'recharts';
-import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { motion } from 'framer-motion';
 
 /* 1. MOCK DATA & TYPES */
@@ -146,8 +144,8 @@ const MOCK_TRANSACTIONS = [
   { id: 'tx2', customer: { name: 'Tiwonge Phiri', email: 't.phiri@outlook.com' }, event: 'VIP Pass', amount: 120000, status: 'pending', date: '2026-03-30' },
 ];
 
-/* 2. CUSTOM TOOLTIP */
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+/* 2. CUSTOM TOOLTIP - Fixed TypeScript */
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as ChartData;
   return (
@@ -458,21 +456,6 @@ export default function MerchantDashboard() {
             </div>
           </div>
 
-<<<<<<< HEAD
-          {/* Events to Sponsor with Dark Mode */}
-          <div
-            className="p-8 rounded-[2.5rem] shadow-sm transition-colors"
-            style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderColor: 'var(--border-color)',
-              borderWidth: 1,
-            }}
-          >
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>
-                Events to Sponsor
-              </h3>
-=======
           {/* EVENTS TO SPONSOR SECTION (Restored) */}
           <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm">
             <div className="flex items-center justify-between mb-8">
