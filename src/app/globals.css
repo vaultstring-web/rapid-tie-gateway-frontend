@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+<<<<<<< HEAD
 /* Dark Mode Variables */
 :root {
   --bg-primary: #fcfcfc;
@@ -23,16 +24,24 @@
   --hover-bg: #2a2a2a;
 }
 
+=======
+>>>>>>> approver
 @layer base {
   * {
     border-color: #e9ecef;
   }
 
   body {
+<<<<<<< HEAD
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
+=======
+    background-color: #f8f9fa;
+    color: #212529;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+>>>>>>> approver
   }
 }
 
@@ -98,11 +107,19 @@
 
   /* Card Styles */
   .card {
+<<<<<<< HEAD
     background-color: var(--bg-secondary);
     border-radius: 0.5rem;
     padding: 1.5rem;
     box-shadow: var(--card-shadow);
     border: 1px solid var(--border-color);
+=======
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+>>>>>>> approver
     transition-duration: 200ms;
   }
   
@@ -120,8 +137,11 @@
     border: 2px solid #dee2e6;
     border-radius: 0.5rem;
     transition-duration: 200ms;
+<<<<<<< HEAD
     background-color: var(--bg-secondary);
     color: var(--text-primary);
+=======
+>>>>>>> approver
   }
   
   .input:focus {
@@ -142,7 +162,11 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
+<<<<<<< HEAD
     color: var(--text-secondary);
+=======
+    color: #495057;
+>>>>>>> approver
     margin-bottom: 0.25rem;
   }
 
@@ -245,4 +269,8 @@
     transform: translateY(0);
     opacity: 1;
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> approver

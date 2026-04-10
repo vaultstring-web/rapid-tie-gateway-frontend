@@ -156,6 +156,7 @@ class AuthService {
   getDashboardUrl(user: User): string {
     switch (user.role) {
       case 'MERCHANT':
+<<<<<<< HEAD
         return '/merchant';
       case 'ORGANIZER':
         return '/organizer';
@@ -165,6 +166,17 @@ class AuthService {
         return '/approver';
       case 'FINANCE_OFFICER':
         return '/finance';
+=======
+        return '/dashboard/merchant';
+      case 'ORGANIZER':
+        return '/dashboard/organizer';
+      case 'EMPLOYEE':
+        return '/dashboard/employee';
+      case 'APPROVER':
+        return '/dashboard/approver';
+      case 'FINANCE_OFFICER':
+        return '/dashboard/finance';
+>>>>>>> approver
       case 'ADMIN':
         return '/dashboard/admin';
       case 'COMPLIANCE':
