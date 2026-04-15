@@ -98,7 +98,7 @@ export default function BulkDisbursement() {
     <div className="space-y-8 animate-slide-up">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Bulk Disbursement</h1>
+          <h1 className="text-3xl font-bold text-white-900">Bulk Disbursement</h1>
           <p className="text-gray-500 mt-1">Upload CSV or Excel files to process multiple disbursements at once.</p>
         </div>
         <button 
@@ -161,7 +161,7 @@ export default function BulkDisbursement() {
                 </div>
               </div>
               <div>
-                <p className="text-lg font-bold text-gray-900">Drag and drop your file here</p>
+                <p className="text-lg font-bold text-white-900">Drag and drop your file here</p>
                 <p className="text-sm text-gray-500">or click to browse from your computer</p>
               </div>
               <p className="text-xs text-gray-400 uppercase font-bold tracking-widest">Supports .CSV, .XLSX</p>
@@ -195,7 +195,7 @@ export default function BulkDisbursement() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">File Parsed Successfully</h3>
+                  <h3 className="text-lg font-bold text-whitw-900">File Parsed Successfully</h3>
                   <p className="text-sm text-gray-500">
                     Found {parsedData.length} records: 
                     <span className="text-green-600 ml-1">{validRecords} valid</span>

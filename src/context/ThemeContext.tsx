@@ -27,11 +27,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Initialize theme from localStorage or system preference
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as Theme | null;
-    const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
     const initialTheme = storedTheme || systemPreference;
-    
+
     setTheme(initialTheme);
     document.documentElement.setAttribute('data-theme', initialTheme);
+    // Apply dark class for Tailwind dark mode
+    if (initialTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     setMounted(true);
   }, []);
 
@@ -40,11 +48,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (mounted) {
       localStorage.setItem('theme', theme);
       document.documentElement.setAttribute('data-theme', theme);
+      // Add dark class for Tailwind dark mode
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   }, [theme, mounted]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
   if (!mounted) {

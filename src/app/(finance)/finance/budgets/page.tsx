@@ -24,7 +24,7 @@ export default function BudgetTracking() {
   return (
     <div className="space-y-8 animate-slide-up">
       <header>
-        <h1 className="text-3xl font-bold text-gray-900">Budget Tracking</h1>
+        <h1 className="text-3xl font-bold text-white-900">Budget Tracking</h1>
         <p className="text-gray-500 mt-1">Monitor departmental spending and event-specific budget allocations.</p>
       </header>
 
@@ -56,7 +56,7 @@ export default function BudgetTracking() {
                       <PieChartIcon className="w-6 h-6 text-[#3b5a65]" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">{budget.department}</h3>
+                      <h3 className="text-xl font-bold text-white-900">{budget.department}</h3>
                       <p className="text-xs text-gray-400 mt-1">Budget ID: {budget.id}</p>
                     </div>
                   </div>

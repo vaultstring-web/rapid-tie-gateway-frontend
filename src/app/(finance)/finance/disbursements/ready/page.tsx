@@ -49,12 +49,12 @@ export default function ReadyDisbursements() {
     <div className="space-y-8 animate-slide-up">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ready for Payment</h1>
+          <h1 className="text-3xl font-bold text-white-900">Ready for Payment</h1>
           <p className="text-gray-500 mt-1">Review and batch approved requests for disbursement.</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Selected Total</p>
+            <p className="text-[10px] font-bold text-white-400 uppercase tracking-widest">Selected Total</p>
             <p className="text-2xl font-bold text-[#84cc16]">{formatCurrency(selectedTotal)}</p>
           </div>
           <button 
@@ -71,7 +71,7 @@ export default function ReadyDisbursements() {
         {/* Filters Sidebar */}
         <aside className="lg:col-span-1 space-y-6">
           <div className="card p-4">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Filters</h3>
+            <h3 className="text-sm font-bold text-white-900 uppercase tracking-wider mb-4">Filters</h3>
             <div className="space-y-4">
               <div>
                 <label className="label">Recipient Name</label>
@@ -110,12 +110,12 @@ export default function ReadyDisbursements() {
                       <Calendar className="w-5 h-5 text-[#3b5a65]" />
                     </div>
                     <div className="text-left">
-                      <h3 className="text-sm font-bold text-gray-900">{event}</h3>
-                      <p className="text-xs text-gray-500">{items.length} Pending Disbursements</p>
+                      <h3 className="text-sm font-bold text-white-900">{event}</h3>
+                      <p className="text-xs text-white-500">{items.length} Pending Disbursements</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-bold text-gray-900">
+                    <span className="text-sm font-bold text-white-900">
                       {formatCurrency(eventTotal)}
                     </span>
                     {expandedEvents.includes(event) ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -150,11 +150,11 @@ export default function ReadyDisbursements() {
                                 </div>
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">Type</p>
+                                <p className="text-[10px] font-bold text-white-400 uppercase">Type</p>
                                 <p className="text-xs font-medium text-gray-700">{item.type}</p>
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase">Amount</p>
+                                <p className="text-[10px] font-bold text-white-400 uppercase">Amount</p>
                                 <p className="text-sm font-bold text-gray-900">{formatCurrency(item.amount)}</p>
                               </div>
                               <div className="flex justify-end">

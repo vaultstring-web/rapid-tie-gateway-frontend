@@ -38,17 +38,6 @@ export default function LoginPage() {
   }, []);
 
   // Redirect if already authenticated
-<<<<<<< HEAD
-  /*useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-       const user = authService.getCurrentUser();
-      if (user) {
-       authService.redirectToDashboard(user);
-    }
-    }
-  }, [isAuthenticated, isLoading]);
-*/
-=======
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       const user = authService.getCurrentUser();
@@ -57,8 +46,6 @@ export default function LoginPage() {
       }
     }
   }, [isAuthenticated, isLoading]);
-
->>>>>>> approver
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
