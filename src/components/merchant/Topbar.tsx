@@ -1,146 +1,94 @@
-<<<<<<< HEAD
-﻿'use client';
+"use client";
 
 import { useState } from 'react';
-import { Bell, Search, ChevronDown, Menu } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Bell, Sun, Moon, ChevronDown, Search } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Topbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const getUserInitials = () => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    return user?.email?.[0].toUpperCase() || 'U';
+  };
 
   return (
-    <header
-      className="h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 transition-colors"
-      style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderColor: 'var(--border-color)',
-        borderBottomWidth: 1,
-      }}
-    >
-      <div className="flex items-center gap-4">
-        <button
-=======
-﻿"use client";
-
-import { useState } from 'react';
-import { Bell, Search, ChevronDown, Menu } from 'lucide-react';
-
-export default function Topbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
-      <div className="flex items-center gap-4">
-        <button 
->>>>>>> approver
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-        >
-          <Menu size={20} />
-        </button>
-        <div className="flex-1 max-w-md hidden md:block">
-          <div className="relative">
-<<<<<<< HEAD
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2"
-              size={18}
-              style={{ color: 'var(--text-secondary)' }}
-            />
-            <input
-              type="text"
-              placeholder="Search transactions, links, or events..."
-              className="w-full pl-10 h-10 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#84cc16] transition-colors"
-              style={{
-                backgroundColor: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)',
-                borderWidth: 1,
-              }}
-=======
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search transactions, links, or events..." 
-              className="w-full pl-10 h-10 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-[#84cc16] focus:ring-1 focus:ring-[#84cc16]"
->>>>>>> approver
-            />
-          </div>
+    <header className="h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 transition-colors border-b bg-[var(--bg-secondary)] border-[var(--border-color)]">
+      
+      {/* Search Section */}
+      <div className="flex-1 max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
+          <input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-10 pl-9 pr-4 rounded-md border transition-colors outline-none focus:ring-2 focus:ring-[#84cc16]/50 bg-[var(--bg-primary)] border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
+          />
         </div>
       </div>
 
+      {/* Action Section */}
       <div className="flex items-center gap-4">
-<<<<<<< HEAD
         <button
-          className="p-2 rounded-full hover:transition-colors"
-          style={{ color: 'var(--text-secondary)', backgroundColor: 'transparent' }}
+          onClick={toggleTheme}
+          className="p-2 rounded-md transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-primary)]"
         >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        <button className="relative p-2 rounded-md transition-colors text-[var(--text-primary)] hover:bg-[var(--bg-primary)]">
           <Bell size={20} />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2"
-            style={{ backgroundColor: 'rgb(239, 68, 68)' }}
-          ></span>
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-[var(--bg-secondary)]"></span>
         </button>
 
-        <ThemeToggle />
+        {/* User Dropdown Profile */}
+        <div className="relative">
+          <button 
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="flex items-center gap-2 p-1 px-2 rounded-md transition-colors hover:bg-[var(--bg-primary)]"
+          >
+            <div className="h-8 w-8 rounded-full overflow-hidden flex items-center justify-center bg-[#84cc16]/20 text-[#84cc16] font-bold text-sm">
+              {user?.avatar ? <img src={user.avatar} alt="avatar" /> : getUserInitials()}
+            </div>
+            <div className="hidden md:block text-left">
+              <p className="text-sm font-medium leading-none text-[var(--text-primary)]">
+                {user?.firstName || user?.email?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
+                {user?.role || 'Merchant'}
+              </p>
+            </div>
+            <ChevronDown size={16} className={`text-[var(--text-secondary)] transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+          </button>
 
-        <div className="h-8 w-px" style={{ backgroundColor: 'var(--border-color)' }}></div>
-
-        <button
-          className="flex items-center gap-2 text-sm font-medium hover:transition-colors"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-=======
-        <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full relative">
-          <Bell size={20} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-        </button>
-        
-        <div className="h-8 w-px bg-gray-200 mx-2"></div>
-        
-        <button className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
->>>>>>> approver
-          <span className="hidden sm:inline">English</span>
-          <ChevronDown size={16} />
-        </button>
-      </div>
-
-      {mobileMenuOpen && (
-<<<<<<< HEAD
-        <div
-          className="absolute top-16 left-0 right-0 border-b p-4 lg:hidden transition-colors"
-          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
-        >
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2"
-              size={18}
-              style={{ color: 'var(--text-secondary)' }}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-10 h-10 text-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-[#84cc16] transition-colors"
-              style={{
-                backgroundColor: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                borderColor: 'var(--border-color)',
-                borderWidth: 1,
-              }}
-=======
-        <div className="absolute top-16 left-0 right-0 bg-white border-b border-gray-200 p-4 lg:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full pl-10 h-10 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-[#84cc16] focus:ring-1 focus:ring-[#84cc16]"
->>>>>>> approver
-            />
-          </div>
+          {menuOpen && (
+            <div className="absolute right-0 mt-2 w-56 rounded-md border shadow-lg z-50 bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-primary)]">
+              <div className="p-3 border-b border-[var(--border-color)]">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">My Account</p>
+              </div>
+              <div className="p-1">
+                <button className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-[#84cc16]/10 transition-colors">Profile</button>
+                <button className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-[#84cc16]/10 transition-colors">Settings</button>
+                <button className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-[#84cc16]/10 transition-colors">Billing</button>
+                <div className="h-px bg-[var(--border-color)] my-1"></div>
+                <button 
+                  onClick={logout}
+                  className="w-full text-left px-3 py-2 text-sm rounded-md text-red-600 hover:bg-red-50/10 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </header>
   );
 }
