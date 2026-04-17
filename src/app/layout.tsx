@@ -11,16 +11,20 @@ export const metadata: Metadata = {
   description: 'Secure, seamless payment processing for Malawi',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-white text-gray-900 transition-colors`}>
-        <div className="flex flex-col min-h-screen">
-          <Providers>
+        <Providers>
+          <div className="flex flex-col min-h-screen">
             <main className="flex-1">{children}</main>
-          </Providers>
-          <Footer />
-        </div>
+            <Footer />
+          </div>
+        </Providers>
       </body>
     </html>
   );

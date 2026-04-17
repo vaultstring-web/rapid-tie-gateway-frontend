@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { Bell, Search, ChevronDown, Menu } from 'lucide-react';
+import { Search, ChevronDown, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/context/ThemeContext';
+import { UnreadBadge } from '@/components/notifications/UnreadBadge';
 
 export default function Topbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,10 +19,12 @@ export default function Topbar() {
         borderBottomWidth: 1,
       }}
     >
+      {/* Left section - Menu and Search */}
       <div className="flex items-center gap-4">
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+          className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          style={{ color: 'var(--text-secondary)' }}
         >
           <Menu size={20} />
         </button>
@@ -47,22 +50,18 @@ export default function Topbar() {
         </div>
       </div>
 
+      {/* Right section - Notifications, Theme Toggle, Language */}
       <div className="flex items-center gap-4">
-        <button
-          className="p-2 rounded-full hover:transition-colors relative"
-          style={{ color: 'var(--text-secondary)', backgroundColor: 'transparent' }}
-        >
-          <Bell size={20} />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2"
-            style={{ backgroundColor: 'rgb(239, 68, 68)' }}
-          ></span>
-        </button>
-
+        {/* UnreadBadge component handles the bell icon with count */}
+        <UnreadBadge />
+        
+        {/* Theme Toggle - only once */}
         <ThemeToggle />
 
-        <div className="h-8 w-px" style={{ backgroundColor: 'var(--border-color)' }}></div>
+        {/* Divider */}
+        <div className="h-8 w-px" style={{ backgroundColor: 'var(--border-color)' }} />
 
+        {/* Language Selector */}
         <button
           className="flex items-center gap-2 text-sm font-medium hover:transition-colors"
           style={{ color: 'var(--text-secondary)' }}
@@ -72,6 +71,7 @@ export default function Topbar() {
         </button>
       </div>
 
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div
           className="absolute top-16 left-0 right-0 border-b p-4 lg:hidden transition-colors"

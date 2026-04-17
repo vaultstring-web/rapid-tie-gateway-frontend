@@ -1,6 +1,119 @@
 ﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Add slick-carousel  */
+@import "~slick-carousel/slick/slick.css";
+@import "~slick-carousel/slick/slick-theme.css";
+
+/* Add react-big-calendar */
+@import "react-big-calendar/lib/css/react-big-calendar.css";
+
+/* React Big Calendar Dark Mode Overrides */
+.rbc-calendar {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.rbc-header {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  padding: 10px;
+}
+
+.rbc-off-range-bg {
+  background-color: var(--bg-primary);
+}
+
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+  border-color: var(--border-color);
+}
+
+.rbc-day-bg {
+  background-color: var(--bg-secondary);
+}
+
+.rbc-day-bg.rbc-off-range-bg {
+  background-color: var(--bg-primary);
+}
+
+.rbc-date-cell {
+  color: var(--text-primary);
+}
+
+.rbc-date-cell.rbc-now {
+  color: #84cc16;
+  font-weight: bold;
+}
+
+.rbc-today {
+  background-color: rgba(132, 204, 22, 0.1) !important;
+}
+
+.rbc-event {
+  background-color: #3b82f6;
+  border-radius: 4px;
+}
+
+.rbc-event-content {
+  font-size: 12px;
+}
+
+.rbc-toolbar button {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.rbc-toolbar button:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-primary);
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #84cc16;
+  color: white;
+}
+
+.rbc-agenda-table {
+  border-color: var(--border-color);
+}
+
+.rbc-agenda-table thead tr {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.rbc-agenda-table th,
+.rbc-agenda-table td {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+/* Slick Carousel Dark Mode Fixes */
+.slick-prev:before,
+.slick-next:before {
+  color: #84cc16 !important;
+  font-size: 24px !important;
+}
+
+.slick-dots li button:before {
+  color: var(--text-secondary) !important;
+}
+
+.slick-dots li.slick-active button:before {
+  color: #84cc16 !important;
+}
+
+[data-theme="dark"] .slick-prev:before,
+[data-theme="dark"] .slick-next:before {
+  color: #a3e635 !important;
+}
+
+[data-theme="dark"] .slick-dots li button:before {
+  color: #6b7280 !important;
+}
 
 /* Dark Mode Variables */
 :root {

@@ -16,6 +16,8 @@ import {
   CreditCard,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
+  MessageSquare,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,12 @@ const navItems = [
   { icon: ArrowLeftRight, label: 'Transactions', path: '/merchant/transactions' },
   { icon: LinkIcon, label: 'Payment Links', path: '/merchant/payment-links' },
   { icon: RotateCcw, label: 'Refunds', path: '/merchant/refunds' },
+  //this
+  { icon: TrendingUp, label: 'Event Analytics', path: '/analytics/events' }, // Add this
+  // ... rest of items
+  { icon: Users, label: 'Networking', path: '/events/networking' }
+
+// { icon: MessageSquare, label: 'Bulk Messaging', path: `/organizer/events/${eventId}/communications` }
 ];
 
 const settingItems = [
