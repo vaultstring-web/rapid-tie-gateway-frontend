@@ -1,81 +1,75 @@
 export interface DatabaseStatus {
   status: 'healthy' | 'degraded' | 'down';
-  latency: number;
+  version: string;
   connections: number;
   maxConnections: number;
-  version: string;
   uptime: number;
   replication: {
-    enabled: boolean;
     role: 'primary' | 'replica';
+    lag: number;
+    status: 'syncing' | 'synced' | 'down';
     replicas: {
       name: string;
-      status: 'syncing' | 'synced' | 'down';
+      status: 'healthy' | 'degraded' | 'down';
       lag: number;
-      lastSync: string;
     }[];
   };
+  queriesPerSecond: number;
+  slowQueries: number;
+  cacheHitRatio: number;
 }
 
 export interface RedisStatus {
   status: 'healthy' | 'degraded' | 'down';
+  version: string;
   memory: {
     used: number;
     peak: number;
     max: number;
     fragmentation: number;
   };
+  keys: number;
+  hits: number;
+  misses: number;
   hitRate: number;
   connectedClients: number;
-  commandsProcessed: number;
   uptime: number;
 }
 
-export interface WorkerQueue {
-  name: string;
+export interface WorkerQueueStatus {
+  queueName: string;
   active: number;
   waiting: number;
   completed: number;
   failed: number;
   delayed: number;
   processingRate: number;
-  status: 'healthy' | 'busy' | 'stalled';
+  status: 'healthy' | 'busy' | 'degraded' | 'down';
 }
 
 export interface StorageStatus {
-  type: 'database' | 'uploads' | 'logs' | 'backups';
-  used: number;
-  total: number;
-  path: string;
-  status: 'healthy' | 'warning' | 'critical';
-}
-
-export interface ServiceStatus {
-  name: string;
-  status: 'healthy' | 'degraded' | 'down';
-  uptime: number;
-  version: string;
-  lastChecked: string;
+  disk: {
+    name: string;
+    total: number;
+    used: number;
+    free: number;
+    usagePercent: number;
+    status: 'healthy' | 'warning' | 'critical';
+  }[];
+  database: {
+    name: string;
+    total: number;
+    used: number;
+    free: number;
+    usagePercent: number;
+  }[];
 }
 
 export interface SystemHealthData {
   database: DatabaseStatus;
   redis: RedisStatus;
-  workerQueues: WorkerQueue[];
-  storage: StorageStatus[];
-  services: ServiceStatus[];
-  lastUpdated: string;
-  overallStatus: 'healthy' | 'degraded' | 'down';
+  workerQueues: WorkerQueueStatus[];
+  storage: StorageStatus;
+  lastChecked: string;
+  overallStatus: 'healthy' | 'degraded' | 'critical';
 }
-
-export const STATUS_COLORS = {
-  healthy: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400', border: 'border-green-500' },
-  degraded: { bg: 'bg-yellow-100 dark:bg-yellow-900/20', text: 'text-yellow-600 dark:text-yellow-400', border: 'border-yellow-500' },
-  down: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-600 dark:text-red-400', border: 'border-red-500' },
-};
-
-export const STORAGE_COLORS = {
-  healthy: '#84cc16',
-  warning: '#f59e0b',
-  critical: '#ef4444',
-};

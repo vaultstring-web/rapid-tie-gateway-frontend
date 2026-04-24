@@ -2,121 +2,152 @@
 
 import { useState, useEffect } from 'react';
 import { RefreshCw, Activity } from 'lucide-react';
-import { StatusCards } from '@/components/admin/health/StatusCards';
-import { DatabaseStatus } from '@/components/admin/health/DatabaseStatus';
-import { RedisStatus } from '@/components/admin/health/RedisStatus';
+import { OverallStatusHeader } from '@/components/admin/health/OverallStatusHeader';
+import { DatabaseStatusCard } from '@/components/admin/health/DatabaseStatusCard';
+import { RedisStatusCard } from '@/components/admin/health/RedisStatusCard';
 import { WorkerQueues } from '@/components/admin/health/WorkerQueues';
 import { StorageStatus } from '@/components/admin/health/StorageStatus';
-import { ServicesStatus } from '@/components/admin/health/ServicesStatus';
+import { healthService } from '@/services/admin/health.service';
+import { SystemHealthData } from '@/types/admin/health';
+import { useTheme } from '@/context/ThemeContext';
 import toast from 'react-hot-toast';
 
 // Mock data for development
-const getMockHealthData = (): any => ({
-  overallStatus: 'healthy',
-  database: {
-    status: 'healthy',
-    latency: 12,
-    connections: 45,
-    maxConnections: 100,
-    version: 'PostgreSQL 15.3',
-    uptime: 86400 * 14,
-    replication: {
-      enabled: true,
-      role: 'primary',
-      replicas: [
-        { name: 'replica-01', status: 'synced', lag: 0, lastSync: new Date().toISOString() },
-        { name: 'replica-02', status: 'syncing', lag: 2, lastSync: new Date().toISOString() },
+const getMockHealthData = (): SystemHealthData => {
+  return {
+    database: {
+      status: 'healthy',
+      version: 'PostgreSQL 15.2',
+      connections: 42,
+      maxConnections: 100,
+      uptime: 86400 * 14,
+      replication: {
+        role: 'primary',
+        lag: 0,
+        status: 'synced',
+        replicas: [
+          { name: 'replica-01', status: 'healthy', lag: 5 },
+          { name: 'replica-02', status: 'healthy', lag: 8 },
+        ],
+      },
+      queriesPerSecond: 245,
+      slowQueries: 3,
+      cacheHitRatio: 98.5,
+    },
+    redis: {
+      status: 'healthy',
+      version: 'Redis 7.0.12',
+      memory: {
+        used: 256 * 1024 * 1024,
+        peak: 380 * 1024 * 1024,
+        max: 1024 * 1024 * 1024,
+        fragmentation: 1.05,
+      },
+      keys: 12450,
+      hits: 987654,
+      misses: 12345,
+      hitRate: 98.8,
+      connectedClients: 128,
+      uptime: 86400 * 21,
+    },
+    workerQueues: [
+      {
+        queueName: 'email-queue',
+        active: 5,
+        waiting: 12,
+        completed: 9876,
+        failed: 23,
+        delayed: 3,
+        processingRate: 15,
+        status: 'healthy',
+      },
+      {
+        queueName: 'payment-queue',
+        active: 8,
+        waiting: 5,
+        completed: 5432,
+        failed: 5,
+        delayed: 0,
+        processingRate: 25,
+        status: 'healthy',
+      },
+      {
+        queueName: 'notification-queue',
+        active: 3,
+        waiting: 45,
+        completed: 12345,
+        failed: 12,
+        delayed: 8,
+        processingRate: 30,
+        status: 'busy',
+      },
+    ],
+    storage: {
+      disk: [
+        { name: '/var/lib/postgresql', total: 500 * 1024 * 1024 * 1024, used: 320 * 1024 * 1024 * 1024, free: 180 * 1024 * 1024 * 1024, usagePercent: 64, status: 'healthy' },
+        { name: '/var/log', total: 100 * 1024 * 1024 * 1024, used: 45 * 1024 * 1024 * 1024, free: 55 * 1024 * 1024 * 1024, usagePercent: 45, status: 'healthy' },
+        { name: '/backup', total: 1000 * 1024 * 1024 * 1024, used: 820 * 1024 * 1024 * 1024, free: 180 * 1024 * 1024 * 1024, usagePercent: 82, status: 'warning' },
+      ],
+      database: [
+        { name: 'rapid_tie_db', total: 500 * 1024 * 1024 * 1024, used: 310 * 1024 * 1024 * 1024, free: 190 * 1024 * 1024 * 1024, usagePercent: 62 },
+        { name: 'analytics_db', total: 200 * 1024 * 1024 * 1024, used: 98 * 1024 * 1024 * 1024, free: 102 * 1024 * 1024 * 1024, usagePercent: 49 },
       ],
     },
-  },
-  redis: {
-    status: 'healthy',
-    memory: { used: 256 * 1024 * 1024, peak: 380 * 1024 * 1024, max: 1024 * 1024 * 1024, fragmentation: 1.2 },
-    hitRate: 98.5,
-    connectedClients: 125,
-    commandsProcessed: 12500000,
-    uptime: 86400 * 7,
-  },
-  workerQueues: [
-    { name: 'email-queue', active: 3, waiting: 12, completed: 12500, failed: 45, delayed: 2, processingRate: 15, status: 'healthy' },
-    { name: 'payment-queue', active: 5, waiting: 8, completed: 8900, failed: 23, delayed: 1, processingRate: 22, status: 'healthy' },
-    { name: 'notification-queue', active: 2, waiting: 25, completed: 34500, failed: 89, delayed: 5, processingRate: 30, status: 'busy' },
-    { name: 'report-queue', active: 1, waiting: 3, completed: 1200, failed: 5, delayed: 0, processingRate: 5, status: 'healthy' },
-  ],
-  storage: [
-    { type: 'database', used: 50 * 1024 * 1024 * 1024, total: 100 * 1024 * 1024 * 1024, path: '/data/postgres', status: 'healthy' },
-    { type: 'uploads', used: 25 * 1024 * 1024 * 1024, total: 50 * 1024 * 1024 * 1024, path: '/data/uploads', status: 'healthy' },
-    { type: 'logs', used: 80 * 1024 * 1024 * 1024, total: 100 * 1024 * 1024 * 1024, path: '/var/log', status: 'warning' },
-    { type: 'backups', used: 200 * 1024 * 1024 * 1024, total: 500 * 1024 * 1024 * 1024, path: '/backup', status: 'healthy' },
-  ],
-  services: [
-    { name: 'API Gateway', status: 'healthy', uptime: 86400 * 14, version: '2.1.0', lastChecked: new Date().toISOString() },
-    { name: 'Auth Service', status: 'healthy', uptime: 86400 * 14, version: '1.8.0', lastChecked: new Date().toISOString() },
-    { name: 'Payment Processor', status: 'healthy', uptime: 86400 * 10, version: '3.2.1', lastChecked: new Date().toISOString() },
-    { name: 'Notification Service', status: 'degraded', uptime: 86400 * 5, version: '1.4.0', lastChecked: new Date().toISOString() },
-    { name: 'WebSocket Server', status: 'healthy', uptime: 86400 * 7, version: '2.0.0', lastChecked: new Date().toISOString() },
-  ],
-  lastUpdated: new Date().toISOString(),
-});
+    lastChecked: new Date().toISOString(),
+    overallStatus: 'healthy',
+  };
+};
 
-// Content component (no useTheme)
-function SystemHealthContent() {
-  const [data, setData] = useState<any>(null);
+export default function SystemHealthPage() {
+  const { theme } = useTheme();
+  const [data, setData] = useState<SystemHealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [useMockData, setUseMockData] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
 
   useEffect(() => {
     loadData();
     
-    let interval: NodeJS.Timeout;
-    if (autoRefresh) {
-      interval = setInterval(() => {
-        loadData(true);
-      }, 30000);
-    }
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadData(true);
+    }, 30000);
     
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [autoRefresh]);
+    return () => clearInterval(interval);
+  }, []);
 
-  const loadData = async (showRefresh = false) => {
-    if (showRefresh) setRefreshing(true);
-    setLoading(true);
+  const loadData = async (silent: boolean = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    
     try {
+      // Using mock data for now
       const mockData = getMockHealthData();
       setData(mockData);
       setUseMockData(true);
     } catch (error) {
-      console.error('Failed to load system health:', error);
-      toast.error('Failed to load system health data');
-      setData(getMockHealthData());
+      console.error('Failed to load health data:', error);
+      if (!silent) toast.error('Failed to load health data');
+      const mockData = getMockHealthData();
+      setData(mockData);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  const handleRefresh = () => {
+    loadData();
+    toast.success('Health data refreshed');
+  };
+
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#84cc16] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-[var(--text-secondary)]">Loading system health...</p>
         </div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-sm text-[var(--text-secondary)]">Failed to load system health data</p>
-        <button onClick={() => loadData()} className="mt-4 px-4 py-2 rounded-lg bg-[#84cc16] text-white">
-          Retry
-        </button>
       </div>
     );
   }
@@ -127,14 +158,17 @@ function SystemHealthContent() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">System Health</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">Monitor system performance and infrastructure status</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Monitor system performance and resource utilization
+          </p>
         </div>
         <div className="flex gap-3">
-          <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
-            <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[#84cc16] focus:ring-[#84cc16]" />
-            Auto-refresh (30s)
-          </label>
-          <button onClick={() => loadData(true)} disabled={refreshing} className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+          >
             <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             Refresh
           </button>
@@ -144,38 +178,33 @@ function SystemHealthContent() {
       {/* Demo Mode Notice */}
       {useMockData && (
         <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-800 dark:text-blue-300">ℹ️ Demo Mode - Using sample data. Connect to backend for live system metrics.</p>
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            ℹ️ Demo Mode - Using sample data. Connect to backend for live system metrics.
+          </p>
         </div>
       )}
 
-      {/* Status Cards */}
-      <StatusCards data={data} loading={loading} />
+      {/* Overall Status */}
+      {data && (
+        <OverallStatusHeader status={data.overallStatus} lastChecked={data.lastChecked} />
+      )}
 
-      {/* Database & Redis Row */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <DatabaseStatus data={data.database} loading={loading} />
-        <RedisStatus data={data.redis} loading={loading} />
+      {/* Database and Redis Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {data && <DatabaseStatusCard status={data.database} loading={loading} />}
+        {data && <RedisStatusCard status={data.redis} loading={loading} />}
       </div>
 
-      {/* Worker Queues & Storage Row */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <WorkerQueues queues={data.workerQueues} loading={loading} />
-        <StorageStatus storage={data.storage} loading={loading} />
+      {/* Worker Queues */}
+      {data && <WorkerQueues queues={data.workerQueues} loading={loading} />}
+
+      {/* Storage Status */}
+      {data && <StorageStatus storage={data.storage} loading={loading} />}
+
+      {/* Footer Note */}
+      <div className="text-center text-xs text-[var(--text-secondary)] pt-4">
+        <p>Data refreshes automatically every 30 seconds</p>
       </div>
-
-      {/* Services Status */}
-      <ServicesStatus services={data.services} loading={loading} />
-
-      {/* Last Updated */}
-      <p className="text-xs text-center text-[var(--text-secondary)] pt-4">Last updated: {new Date(data.lastUpdated).toLocaleString()}</p>
     </div>
   );
-}
-
-// Main export
-export default function SystemHealthPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return null;
-  return <SystemHealthContent />;
 }

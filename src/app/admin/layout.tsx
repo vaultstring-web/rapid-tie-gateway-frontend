@@ -16,6 +16,8 @@ import {
   Bell,
   Shield,
   Building2,
+  FileText,
+  AlertTriangle, 
 } from 'lucide-react';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -27,8 +29,13 @@ const navItems = [
   { name: 'Merchants', href: '/admin/merchants', icon: Users },
   { name: 'System Health', href: '/admin/health', icon: Activity },
   { name: 'Events', href: '/admin/events', icon: Calendar },
-  { name: 'Transactions', href: '/admin/transactions', icon: Ticket },
+  { name: 'Background Jobs', href: '/admin/jobs', icon: Activity },
+    { name: 'Transactions', href: '/admin/monitor/transactions', icon: Ticket },
+      { name: 'Security', href: '/admin/security', icon: Shield },
+      { name: 'Audit Logs', href: '/admin/audit', icon: FileText },
+        { name: 'Fraud Detection', href: '/admin/security/fraud', icon: AlertTriangle }, 
   { name: 'Settings', href: '/admin/settings', icon: Settings },
+  
 ];
 
 // Inner component that uses useTheme
