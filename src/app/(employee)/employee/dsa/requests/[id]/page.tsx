@@ -1,124 +1,445 @@
-﻿"use client";
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { 
-  MapPin, Calendar, ArrowLeft, CheckCircle2, Clock, 
-  MessageSquare, XCircle, FileText, Send, DollarSign
-} from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Briefcase, DollarSign, FileText, XCircle } from 'lucide-react';
+import { ApprovalTimeline } from '@/components/employee/dsa/ApprovalTimeline';
+import { CommentsThread } from '@/components/employee/dsa/CommentsThread';
+import { LocalEvents } from '@/components/employee/dsa/LocalEvents';
+import { dsaDetailsService } from '@/services/employee/dsaDetails.service';
+import { DsaRequestDetail, ApprovalStep, Comment, LocalEvent } from '@/types/employee/dsaDetails';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/format';
+import { useTheme } from '@/context/ThemeContext';
+import toast from 'react-hot-toast';
 
-interface DSARequest {
-  id: string;
-  purpose: string;
-  destination: string;
-  startDate: string;
-  endDate: string;
-  amount: number;
-  dailyRate?: number;
-  days?: number;
-  status: string;
-  createdAt: string;
-  notes?: string;
-}
+// Mock data for development
+const getMockRequestDetail = (): DsaRequestDetail => {
+  return {
+    id: 'req-1',
+    requestNumber: 'DSA-2024-001',
+    destination: 'Lilongwe',
+    purpose: 'Conference Attendance',
+    startDate: new Date(Date.now() + 7 * 86400000).toISOString(),
+    endDate: new Date(Date.now() + 10 * 86400000).toISOString(),
+    duration: 4,
+    perDiemRate: 45000,
+    accommodationRate: 60000,
+    totalAmount: 420000,
+    currency: 'MWK',
+    status: 'pending',
+    travelAuthRef: 'TA-2024-123',
+    notes: 'Requesting DSA for the Malawi Fintech Expo conference.',
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    submittedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    employee: {
+      id: 'emp-1',
+      name: 'John Doe',
+      email: 'john.doe@company.com',
+      grade: 'Senior Officer',
+      department: 'Finance',
+    },
+  };
+};
 
-const DAILY_RATE = 45000;
-const formatMWK = (amt: number) => `MWK ${amt.toLocaleString()}`;
+const getMockApprovals = (): ApprovalStep[] => {
+  return [
+    {
+      id: 'app-1',
+      level: 1,
+      approverName: 'Jane Smith',
+      approverRole: 'Department Manager',
+      status: 'approved',
+      comments: 'Approved. Valid conference attendance.',
+      approvedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+    },
+    {
+      id: 'app-2',
+      level: 2,
+      approverName: 'Michael Banda',
+      approverRole: 'Finance Director',
+      status: 'pending',
+    },
+  ];
+};
 
-export default function RequestDetail() {
+const getMockComments = (): Comment[] => {
+  return [
+    {
+      id: 'comment-1',
+      authorName: 'Jane Smith',
+      authorRole: 'Department Manager',
+      content: 'Please ensure you submit a report after the conference.',
+      createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+      isApprover: true,
+    },
+    {
+      id: 'comment-2',
+      authorName: 'John Doe',
+      authorRole: 'Employee',
+      content: 'Yes, will do. Thank you for the approval.',
+      createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      isApprover: false,
+    },
+  ];
+};
+
+const getMockLocalEvents = (): LocalEvent[] => {
+  return [
+    {
+      id: 'event-1',
+      name: 'Malawi Fintech Expo 2026',
+      description: 'The largest fintech conference in Malawi featuring industry leaders.',
+      startDate: new Date(Date.now() + 8 * 86400000).toISOString(),
+      endDate: new Date(Date.now() + 10 * 86400000).toISOString(),
+      venue: 'BICC',
+      city: 'Lilongwe',
+      category: 'conference',
+      distance: 2.5,
+      relevanceScore: 95,
+    },
+    {
+      id: 'event-2',
+      name: 'Tech Innovation Workshop',
+      description: 'Hands-on workshop on emerging technologies.',
+      startDate: new Date(Date.now() + 9 * 86400000).toISOString(),
+      endDate: new Date(Date.now() + 9 * 86400000).toISOString(),
+      venue: 'Innovation Hub',
+      city: 'Lilongwe',
+      category: 'workshop',
+      distance: 3.2,
+      relevanceScore: 82,
+    },
+  ];
+};
+
+export default function DSARequestDetailsPage() {
+  const { theme } = useTheme();
   const params = useParams();
   const router = useRouter();
-  const [request, setRequest] = useState<DSARequest | null>(null);
+  const requestId = params.id as string;
+
+  const [request, setRequest] = useState<DsaRequestDetail | null>(null);
+  const [approvals, setApprovals] = useState<ApprovalStep[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [localEvents, setLocalEvents] = useState<LocalEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [comment, setComment] = useState('');
-  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [useMockData, setUseMockData] = useState(true);
 
   useEffect(() => {
-    const savedRequests = localStorage.getItem('dsa_requests');
-    if (savedRequests) {
-      const requests = JSON.parse(savedRequests);
-      const found = requests.find((r: DSARequest) => r.id === params.id);
-      setRequest(found || null);
-    }
-    setLoading(false);
-  }, [params.id]);
+    loadData();
+  }, [requestId]);
 
-  const handleCancel = () => {
-    if (!request) return;
-    setIsCancelling(true);
-    
-    const savedRequests = localStorage.getItem('dsa_requests');
-    if (savedRequests) {
-      const requests = JSON.parse(savedRequests);
-      const updatedRequests = requests.map((r: DSARequest) => 
-        r.id === request.id ? { ...r, status: 'Cancelled' } : r
-      );
-      localStorage.setItem('dsa_requests', JSON.stringify(updatedRequests));
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const mockRequest = getMockRequestDetail();
+      const mockApprovals = getMockApprovals();
+      const mockComments = getMockComments();
+      const mockEvents = getMockLocalEvents();
+      
+      setRequest(mockRequest);
+      setApprovals(mockApprovals);
+      setComments(mockComments);
+      setLocalEvents(mockEvents);
+      setUseMockData(true);
+    } catch (error) {
+      console.error('Failed to load request details:', error);
+      toast.error('Failed to load request details');
+    } finally {
+      setLoading(false);
     }
-    
-    setTimeout(() => {
-      setIsCancelling(false);
-      router.push('/employee');
-    }, 1000);
   };
 
-  if (loading) return <div className="text-center py-12">Loading...</div>;
-  if (!request) return <div className="text-center py-12">Request not found</div>;
+  const handleAddComment = async (content: string) => {
+    if (useMockData) {
+      const newComment: Comment = {
+        id: Date.now().toString(),
+        authorName: 'You',
+        authorRole: 'Employee',
+        content,
+        createdAt: new Date().toISOString(),
+        isApprover: false,
+      };
+      setComments(prev => [...prev, newComment]);
+      toast.success('Comment added (demo)');
+      return;
+    }
+    await dsaDetailsService.addComment(requestId, content);
+    await loadData();
+  };
 
-  // Calculate days if not stored
-  const days = request.days || Math.ceil((new Date(request.endDate).getTime() - new Date(request.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const dailyRate = request.dailyRate || DAILY_RATE;
+  const handleCancelRequest = async () => {
+    setCancelling(true);
+    try {
+      if (useMockData) {
+        setRequest(prev => prev ? { ...prev, status: 'cancelled' } : null);
+        toast.success('Request cancelled (demo)');
+        setShowCancelModal(false);
+      } else {
+        await dsaDetailsService.cancelRequest(requestId);
+        toast.success('Request cancelled successfully');
+        await loadData();
+        setShowCancelModal(false);
+      }
+    } catch (error) {
+      toast.error('Failed to cancel request');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const getStatusConfig = () => {
+    switch (request?.status) {
+      case 'pending':
+        return { label: 'Pending Approval', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-100 dark:bg-yellow-900/30', icon: '⏳' };
+      case 'approved':
+        return { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30', icon: '✅' };
+      case 'rejected':
+        return { label: 'Rejected', color: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30', icon: '❌' };
+      case 'paid':
+        return { label: 'Paid', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30', icon: '💰' };
+      case 'cancelled':
+        return { label: 'Cancelled', color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', icon: '🚫' };
+      default:
+        return { label: 'Draft', color: 'text-gray-600', bg: 'bg-gray-100', icon: '📝' };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#84cc16] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[var(--text-secondary)]">Loading request details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!request) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-center">
+          <XCircle size={48} className="mx-auto mb-4 text-red-500" />
+          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Request Not Found</h2>
+          <p className="text-sm text-[var(--text-secondary)]">The DSA request you're looking for doesn't exist.</p>
+          <button
+            onClick={() => router.push('/employee/dsa/requests')}
+            className="mt-4 px-4 py-2 rounded-lg bg-[#84cc16] text-white hover:brightness-110"
+          >
+            Back to Requests
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const statusConfig = getStatusConfig();
+  const canCancel = request.status === 'pending';
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/employee/dsa/requests" className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowLeft size={20} /></Link>
-          <div><div className="flex items-center gap-3"><h1 className="text-2xl font-bold text-slate-900">Request #{request.id.slice(-6)}</h1><span className={`text-xs px-2 py-1 rounded-full ${request.status === 'Pending' ? 'bg-amber-50 text-amber-600' : request.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>{request.status}</span></div><p className="text-slate-500 text-sm">Submitted on {new Date(request.createdAt).toLocaleDateString()}</p></div>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold text-[var(--text-primary)]">DSA Request Details</h1>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig.bg} ${statusConfig.color}`}>
+                  {statusConfig.icon} {statusConfig.label}
+                </span>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">Request #{request.requestNumber}</p>
+            </div>
+          </div>
+          
+          {canCancel && (
+            <button
+              onClick={() => setShowCancelModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500 text-red-500 hover:bg-red-500/10 transition-colors"
+            >
+              <XCircle size={16} />
+              Cancel Request
+            </button>
+          )}
         </div>
-        {request.status === 'Pending' && (<button onClick={handleCancel} disabled={isCancelling} className="border-2 border-red-200 text-red-500 px-4 py-2 rounded-xl font-bold hover:bg-red-50 transition-colors disabled:opacity-50"><XCircle size={18} className="inline mr-2" />{isCancelling ? 'Cancelling...' : 'Cancel Request'}</button>)}
+
+        {/* Demo Mode Notice */}
+        {useMockData && (
+          <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              ℹ️ Demo Mode - Using sample data. Connect to backend for live data.
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Request Details Card */}
+            <div className="rounded-xl p-5 border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <h2 className="text-lg font-semibold mb-4 text-[var(--text-primary)]">Request Information</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-2">
+                  <MapPin size={16} className="text-[#84cc16] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-[var(--text-secondary)]">Destination</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{request.destination}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Briefcase size={16} className="text-[#84cc16] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-[var(--text-secondary)]">Purpose</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{request.purpose}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Calendar size={16} className="text-[#84cc16] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-[var(--text-secondary)]">Travel Dates</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      {formatDate(request.startDate)} - {formatDate(request.endDate)}
+                    </p>
+                    <p className="text-xs text-[var(--text-secondary)]">{request.duration} days</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <DollarSign size={16} className="text-[#84cc16] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-[var(--text-secondary)]">Total Amount</p>
+                    <p className="text-lg font-bold text-[#84cc16]">{formatCurrency(request.totalAmount)}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {request.travelAuthRef && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  <p className="text-xs text-[var(--text-secondary)]">Travel Authorization Reference</p>
+                  <p className="text-sm font-mono text-[var(--text-primary)]">{request.travelAuthRef}</p>
+                </div>
+              )}
+              
+              {request.notes && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  <p className="text-xs text-[var(--text-secondary)]">Additional Notes</p>
+                  <p className="text-sm text-[var(--text-primary)]">{request.notes}</p>
+                </div>
+              )}
+              
+              <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4 text-xs" style={{ borderColor: 'var(--border-color)' }}>
+                <div>
+                  <span className="text-[var(--text-secondary)]">Submitted:</span>
+                  <span className="ml-2 text-[var(--text-primary)]">{formatDateTime(request.submittedAt!)}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-secondary)]">Last Updated:</span>
+                  <span className="ml-2 text-[var(--text-primary)]">{formatDateTime(request.updatedAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Approval Timeline */}
+            <div className="rounded-xl p-5 border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <h2 className="text-lg font-semibold mb-4 text-[var(--text-primary)]">Approval Timeline</h2>
+              <ApprovalTimeline approvals={approvals} loading={loading} />
+            </div>
+
+            {/* Comments Thread */}
+            <div className="rounded-xl p-5 border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <h2 className="text-lg font-semibold mb-4 text-[var(--text-primary)]">Comments</h2>
+              <CommentsThread
+                comments={comments}
+                requestId={requestId}
+                onAddComment={handleAddComment}
+                loading={loading}
+              />
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Employee Info */}
+            <div className="rounded-xl p-5 border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <h3 className="text-sm font-semibold mb-3 text-[var(--text-primary)]">Employee Information</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[#84cc16]/20 flex items-center justify-center">
+                  <span className="text-lg font-bold text-[#84cc16]">
+                    {request.employee.name.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{request.employee.name}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">{request.employee.email}</p>
+                  <p className="text-xs text-[#84cc16] mt-1">{request.employee.grade} • {request.employee.department}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Local Events */}
+            <div className="rounded-xl p-5 border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
+                <Calendar size={18} className="text-[#84cc16]" />
+                Local Events
+              </h3>
+              <LocalEvents events={localEvents} destination={request.destination} loading={loading} />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-6">
-            <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">Request Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div><label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Purpose</label><p className="text-slate-800 font-medium mt-1">{request.purpose}</p></div>
-              <div><label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Destination</label><p className="text-slate-800 font-medium mt-1 flex items-center gap-1"><MapPin size={16} className="text-lime-500" /> {request.destination}</p></div>
-              <div><label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Travel Dates</label><p className="text-slate-800 font-medium mt-1 flex items-center gap-1"><Calendar size={16} className="text-lime-500" /> {request.startDate} to {request.endDate}</p></div>
-              <div><label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Amount</label><p className="text-2xl font-bold text-lime-600 mt-1">{formatMWK(request.amount)}</p></div>
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowCancelModal(false)}>
+          <div
+            className="rounded-xl max-w-md w-full p-6"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderColor: 'var(--border-color)',
+              borderWidth: 1,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <XCircle size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Cancel DSA Request</h3>
             </div>
-            {request.notes && (<div className="bg-slate-50 rounded-xl p-4"><label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Additional Notes</label><p className="text-slate-600 text-sm mt-1">{request.notes}</p></div>)}
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-100 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">DSA Calculation</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-slate-100"><span className="text-slate-600">Daily Rate</span><span className="font-medium">{formatMWK(dailyRate)}</span></div>
-              <div className="flex justify-between py-2 border-b border-slate-100"><span className="text-slate-600">Number of Days</span><span className="font-medium">{days} days</span></div>
-              <div className="flex justify-between py-2"><span className="font-semibold text-slate-800">Total DSA</span><span className="text-xl font-bold text-lime-600">{formatMWK(request.amount)}</span></div>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
+              Are you sure you want to cancel this DSA request? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg border"
+                style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              >
+                Keep Request
+              </button>
+              <button
+                onClick={handleCancelRequest}
+                disabled={cancelling}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel Request'}
+              </button>
             </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-100 p-6">
-            <h3 className="text-lg font-bold text-slate-800 pb-4 flex items-center gap-2"><MessageSquare size={20} className="text-slate-400" />Comments</h3>
-            <div className="relative"><textarea className="w-full pr-12 py-3 rounded-xl border border-slate-200 focus:outline-none focus:border-lime-500 min-h-[80px] px-4" placeholder="Add a comment..." value={comment} onChange={(e) => setComment(e.target.value)}></textarea><button className="absolute bottom-3 right-3 p-2 bg-lime-500 text-white rounded-lg hover:bg-lime-600 transition-colors"><Send size={18} /></button></div>
           </div>
         </div>
-
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-100 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Clock size={20} className="text-slate-400" />Approval Timeline</h3>
-            <div className="space-y-6">
-              <div className="flex gap-3"><div className="w-8 h-8 rounded-full bg-lime-500 text-white flex items-center justify-center"><CheckCircle2 size={14} /></div><div><p className="font-medium text-slate-800">Request Submitted</p><p className="text-xs text-slate-400">{new Date(request.createdAt).toLocaleDateString()}</p></div></div>
-              <div className="flex gap-3"><div className={`w-8 h-8 rounded-full flex items-center justify-center ${request.status === 'Pending' ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-400'}`}>{request.status === 'Pending' ? <Clock size={14} /> : <CheckCircle2 size={14} />}</div><div><p className={`font-medium ${request.status === 'Pending' ? 'text-slate-800' : 'text-slate-400'}`}>Budget Holder Review</p><p className="text-xs text-slate-400">{request.status === 'Pending' ? 'Awaiting approval' : 'Completed'}</p></div></div>
-            </div>
-          </div>
-
-          <div className="bg-slate-900 text-white rounded-2xl p-6"><h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-lime-400"><FileText size={16} />Attached Documents</h3><div className="space-y-2"><div className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800 cursor-pointer"><div className="w-6 h-6 bg-red-500/20 text-red-400 rounded flex items-center justify-center"><FileText size={12} /></div><span className="text-xs">Travel_Itinerary.pdf</span></div></div></div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Sidebar from '@/components/finance/sidebar';
 import TopBar from '@/components/finance/topbar';
-import Footer from '@/components/layout/Footer';
+import Footer from '@/components/employee/Footer';
 import { cn } from '@/lib/utils';
 import { UserProvider } from '@/contexts/UserContext';
 import { ThemeProvider } from '@/context/ThemeContext';

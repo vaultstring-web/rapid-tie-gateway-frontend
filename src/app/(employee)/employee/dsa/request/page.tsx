@@ -1,118 +1,340 @@
-﻿"use client";
+﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { MapPin, Calendar, ArrowLeft, CheckCircle2, AlertCircle, DollarSign, Info } from 'lucide-react';
+import { ArrowLeft, Send, Briefcase, Calendar, MapPin } from 'lucide-react';
+import { DestinationSelector } from '@/components/employee/dsa/DestinationSelector';
+import { DateRangePicker } from '@/components/employee/dsa/DateRangePicker';
+import { EventsDuringStay } from '@/components/employee/dsa/EventsDuringStay';
+import { CalculationPreview } from '@/components/employee/dsa/CalculationPreview';
+import { dsaService } from '@/services/employee/dsa.service';
+import { DSA_PURPOSES, MatchingEvent } from '@/types/employee/dsa';
+import { useTheme } from '@/context/ThemeContext';
+import toast from 'react-hot-toast';
 
-const destinations = ["Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Mangochi", "Salima"];
-const purposes = ["Official Meeting", "Training", "Field Work", "Conference", "Monitoring"];
-const DAILY_RATE = 45000; // Consistent daily rate
+// Mock data for development
+const getMockEvents = (): MatchingEvent[] => {
+  return [
+    {
+      id: 'event-1',
+      name: 'Malawi Fintech Expo 2026',
+      description: 'The largest fintech conference in Malawi featuring industry leaders.',
+      startDate: new Date(Date.now() + 8 * 86400000).toISOString(),
+      endDate: new Date(Date.now() + 10 * 86400000).toISOString(),
+      venue: 'BICC',
+      city: 'Lilongwe',
+      category: 'conference',
+      imageUrl: '',
+      relevanceScore: 92,
+    },
+    {
+      id: 'event-2',
+      name: 'Tech Innovation Workshop',
+      description: 'Hands-on workshop on emerging technologies.',
+      startDate: new Date(Date.now() + 9 * 86400000).toISOString(),
+      endDate: new Date(Date.now() + 9 * 86400000).toISOString(),
+      venue: 'Innovation Hub',
+      city: 'Lilongwe',
+      category: 'workshop',
+      imageUrl: '',
+      relevanceScore: 78,
+    },
+  ];
+};
 
-export default function NewDSARequest() {
+export default function NewDSARequestPage() {
+  const { theme } = useTheme();
   const router = useRouter();
+  
   const [destination, setDestination] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [purpose, setPurpose] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [travelAuthRef, setTravelAuthRef] = useState('');
   const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [duration, setDuration] = useState(0);
+  const [perDiemRate, setPerDiemRate] = useState(0);
+  const [accommodationRate, setAccommodationRate] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [matchingEvents, setMatchingEvents] = useState<MatchingEvent[]>([]);
+  
+  const [loading, setLoading] = useState({ rates: false, events: false, submit: false });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [useMockData, setUseMockData] = useState(true);
 
-  const calculateDays = () => {
-    if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays > 0 ? diffDays : 0;
+  // Calculate duration and fetch rates when dates change
+  useEffect(() => {
+    if (startDate && endDate) {
+      const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      setDuration(days);
+      calculateRates();
+    }
+  }, [startDate, endDate, destination]);
+
+  // Fetch matching events when destination and dates change
+  useEffect(() => {
+    if (destination && startDate && endDate) {
+      fetchMatchingEvents();
+    }
+  }, [destination, startDate, endDate]);
+
+  const calculateRates = async () => {
+    if (!destination) return;
+    
+    setLoading(prev => ({ ...prev, rates: true }));
+    try {
+      if (useMockData) {
+        // Mock rates based on destination
+        const mockRates: Record<string, { perDiem: number; accommodation: number }> = {
+          Lilongwe: { perDiem: 45000, accommodation: 60000 },
+          Blantyre: { perDiem: 40000, accommodation: 55000 },
+          Mzuzu: { perDiem: 38000, accommodation: 50000 },
+          Zomba: { perDiem: 35000, accommodation: 45000 },
+        };
+        const rates = mockRates[destination] || { perDiem: 35000, accommodation: 45000 };
+        setPerDiemRate(rates.perDiem);
+        setAccommodationRate(rates.accommodation);
+        setTotalAmount((rates.perDiem + rates.accommodation) * duration);
+      } else {
+        const grade = await dsaService.getEmployeeGrade();
+        const rates = await dsaService.getRates(destination, grade);
+        setPerDiemRate(rates.perDiem);
+        setAccommodationRate(rates.accommodation);
+        setTotalAmount((rates.perDiem + rates.accommodation) * duration);
+      }
+    } catch (error) {
+      console.error('Failed to calculate rates:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, rates: false }));
+    }
   };
 
-  const days = calculateDays();
-  const totalAmount = days * DAILY_RATE;
-  const formatMWK = (amt: number) => `MWK ${amt.toLocaleString()}`;
+  const fetchMatchingEvents = async () => {
+    if (!destination || !startDate || !endDate) return;
+    
+    setLoading(prev => ({ ...prev, events: true }));
+    try {
+      if (useMockData) {
+        const mockEvents = getMockEvents();
+        setMatchingEvents(mockEvents);
+      } else {
+        const events = await dsaService.getMatchingEvents(destination, startDate.toISOString(), endDate.toISOString());
+        setMatchingEvents(events);
+      }
+    } catch (error) {
+      console.error('Failed to fetch events:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, events: false }));
+    }
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!destination) newErrors.destination = 'Destination is required';
+    if (!purpose) newErrors.purpose = 'Purpose is required';
+    if (!startDate) newErrors.startDate = 'Start date is required';
+    if (!endDate) newErrors.endDate = 'End date is required';
+    if (startDate && endDate && startDate > endDate) {
+      newErrors.endDate = 'End date must be after start date';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    // Create new request object with consistent calculation
-    const newRequest = {
-      id: Date.now().toString(),
-      purpose: purpose,
-      destination: destination,
-      startDate: startDate,
-      endDate: endDate,
-      amount: totalAmount,
-      dailyRate: DAILY_RATE,
-      days: days,
-      status: 'Pending',
-      createdAt: new Date().toISOString(),
-      notes: notes
-    };
-
-    // Get existing requests from localStorage
-    const existingRequests = localStorage.getItem('dsa_requests');
-    let requests = existingRequests ? JSON.parse(existingRequests) : [];
+    if (!validateForm()) return;
     
-    // Add new request
-    requests.unshift(newRequest);
-    
-    // Save back to localStorage
-    localStorage.setItem('dsa_requests', JSON.stringify(requests));
-
-    setTimeout(() => {
-      setIsSubmitting(false);
-      router.push('/employee');
-    }, 1000);
+    setLoading(prev => ({ ...prev, submit: true }));
+    try {
+      if (useMockData) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        toast.success('DSA request submitted successfully (demo)');
+        router.push('/employee/dsa/requests');
+      } else {
+        await dsaService.createRequest({
+          destination,
+          purpose,
+          startDate: startDate!.toISOString(),
+          endDate: endDate!.toISOString(),
+          travelAuthRef: travelAuthRef || undefined,
+          notes: notes || undefined,
+        });
+        toast.success('DSA request submitted successfully');
+        router.push('/employee/dsa/requests');
+      }
+    } catch (error) {
+      toast.error('Failed to submit request');
+    } finally {
+      setLoading(prev => ({ ...prev, submit: false }));
+    }
   };
+
+  const purposeConfig = DSA_PURPOSES.find(p => p.value === purpose);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
-      <div className="flex items-center gap-4">
-        <Link href="/employee" className="p-2 hover:bg-slate-100 rounded-full transition-colors"><ArrowLeft size={20} /></Link>
-        <div><h1 className="text-2xl font-bold text-slate-900">New DSA Request</h1><p className="text-slate-500 text-sm">Submit a new travel allowance request</p></div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 p-6 space-y-6">
-            <div><label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Destination <span className="text-red-500">*</span></label>
-              <select className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-lime-500" value={destination} onChange={(e) => setDestination(e.target.value)} required>
-                <option value="">Select destination</option>{destinations.map(d => (<option key={d} value={d}>{d}</option>))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Start Date <span className="text-red-500">*</span></label><input type="date" className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-lime-500" value={startDate} onChange={(e) => setStartDate(e.target.value)} required /></div>
-              <div><label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">End Date <span className="text-red-500">*</span></label><input type="date" className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-lime-500" value={endDate} onChange={(e) => setEndDate(e.target.value)} required /></div>
-            </div>
-            <div><label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Purpose <span className="text-red-500">*</span></label>
-              <select className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-lime-500" value={purpose} onChange={(e) => setPurpose(e.target.value)} required>
-                <option value="">Select purpose</option>{purposes.map(p => (<option key={p} value={p}>{p}</option>))}
-              </select>
-            </div>
-            <div><label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Additional Notes</label>
-              <textarea className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-lime-500 min-h-[100px]" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any additional information..."></textarea>
-            </div>
-            <div className="flex gap-4 pt-4">
-              <button type="submit" className="bg-lime-500 hover:bg-lime-600 text-white flex-1 py-3 rounded-xl font-bold transition-colors disabled:opacity-50" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Submit Request"}
-              </button>
-              <button type="button" className="border-2 border-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors" onClick={() => router.push('/employee')}>Cancel</button>
-            </div>
-          </form>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)]">New DSA Request</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              Submit a new Daily Subsistence Allowance request
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-slate-900 text-white rounded-2xl p-6 sticky top-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><DollarSign className="text-lime-400" /> Calculation Preview</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between"><span className="text-slate-400">Daily Rate</span><span>{formatMWK(DAILY_RATE)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">Duration</span><span>{days} days</span></div>
-              <div className="h-px bg-slate-700 my-2"></div>
-              <div className="flex justify-between"><span className="text-slate-400">Total</span><span className="text-xl font-bold text-lime-400">{formatMWK(totalAmount)}</span></div>
+        {/* Demo Mode Notice */}
+        {useMockData && (
+          <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              ℹ️ Demo Mode - Using sample rates and events. Connect to backend for live data.
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form Section */}
+          <div className="lg:col-span-2 space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Destination */}
+              <DestinationSelector
+                value={destination}
+                onChange={setDestination}
+                error={errors.destination}
+              />
+
+              {/* Purpose Dropdown */}
+              <div>
+                <label className="text-sm font-medium mb-1 block text-[var(--text-primary)]">
+                  Purpose of Travel <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Briefcase size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                  <select
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    className={`w-full pl-10 pr-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#84cc16] appearance-none ${
+                      errors.purpose ? 'border-red-500' : 'border-[var(--border-color)]'
+                    }`}
+                    style={{
+                      backgroundColor: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <option value="">Select purpose</option>
+                    {DSA_PURPOSES.map(p => (
+                      <option key={p.value} value={p.value}>{p.icon} {p.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {errors.purpose && <p className="error-text mt-1">{errors.purpose}</p>}
+                {purposeConfig && (
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
+                    Selected: {purposeConfig.icon} {purposeConfig.label}
+                  </p>
+                )}
+              </div>
+
+              {/* Date Range Picker */}
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                error={errors.startDate || errors.endDate}
+              />
+
+              {/* Travel Authorization Reference (Optional) */}
+              <div>
+                <label className="text-sm font-medium mb-1 block text-[var(--text-primary)]">
+                  Travel Authorization Reference
+                  <span className="text-xs text-[var(--text-secondary)] ml-1">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={travelAuthRef}
+                  onChange={(e) => setTravelAuthRef(e.target.value)}
+                  placeholder="e.g., TA-2024-001"
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                  style={{
+                    backgroundColor: 'var(--bg-primary)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+
+              {/* Additional Notes (Optional) */}
+              <div>
+                <label className="text-sm font-medium mb-1 block text-[var(--text-primary)]">
+                  Additional Notes
+                  <span className="text-xs text-[var(--text-secondary)] ml-1">(optional)</span>
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Any additional information about your travel..."
+                  className="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#84cc16] resize-y"
+                  style={{
+                    backgroundColor: 'var(--bg-primary)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading.submit}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-[#84cc16] text-white font-semibold hover:brightness-110 transition-all disabled:opacity-50"
+              >
+                {loading.submit ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send size={18} />
+                )}
+                Submit DSA Request
+              </button>
+            </form>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Calculation Preview */}
+            <CalculationPreview
+              destination={destination}
+              startDate={startDate}
+              endDate={endDate}
+              duration={duration}
+              perDiemRate={perDiemRate}
+              accommodationRate={accommodationRate}
+              totalAmount={totalAmount}
+              loading={loading.rates}
+            />
+
+            {/* Events During Stay */}
+            <div className="rounded-xl p-5 border" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
+                <Calendar size={18} className="text-[#84cc16]" />
+                Events During Your Stay
+              </h3>
+              <EventsDuringStay events={matchingEvents} loading={loading.events} />
             </div>
           </div>
-          <div className="bg-lime-50 rounded-2xl p-4"><h4 className="font-bold text-lime-800 mb-2">Policy Reminder</h4><ul className="text-xs text-lime-700 space-y-1 list-disc pl-4"><li>Daily rate is MWK 45,000</li><li>Submit at least 7 days before travel</li><li>Keep all receipts</li></ul></div>
         </div>
       </div>
     </div>
