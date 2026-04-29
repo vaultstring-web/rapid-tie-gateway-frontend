@@ -1,25 +1,31 @@
 ﻿'use client';
 
+import { useState } from 'react';
+import { ApproverSidebar } from '@/components/approver/ApproverSidebar';
+import { ApproverTopBar } from '@/components/approver/ApproverTopBar';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { UserProvider } from '@/contexts/UserContext';
-import Sidebar from '@/components/approver/Sidebar';
-import TopBar from '@/components/approver/TopBar';
 
 export default function ApproverLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
-    <UserProvider>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <TopBar />
-          <main className="flex-1 p-8 overflow-y-auto bg-[#f8f9fa]">
-            {children}
-          </main>
+    <ThemeProvider>
+      <UserProvider>
+        <div className="flex min-h-screen">
+          <ApproverSidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+          <div className="flex-1 flex flex-col min-w-0">
+            <ApproverTopBar />
+            <main className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
-    </UserProvider>
+      </UserProvider>
+    </ThemeProvider>
   );
 }

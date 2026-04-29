@@ -1,242 +1,350 @@
 ﻿'use client';
 
-import { motion } from 'framer-motion';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Clock, AlertCircle, CheckCircle, XCircle, MapPin, Users, ArrowRight, User } from 'lucide-react';
-import Link from 'next/link';
-import { MOCK_REQUESTS, MOCK_DECISIONS, MOCK_TEAM_SUMMARY } from '@/mock/mockData';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Users, TrendingUp, Clock, RefreshCw, MapPin } from 'lucide-react';
+import { PendingRequestsCard } from '@/components/approver/PendingRequestsCard';
+import { EventsMapView } from '@/components/approver/EventsMapView';
+import { TeamSummaryTable } from '@/components/approver/TeamSummaryTable';
+import { RecentDecisionsFeed } from '@/components/approver/RecentDecisionsFeed';
+import { ApprovalRateChart } from '@/components/approver/ApprovalRateChart';
+import { DashboardData } from '@/types/rejected.ts/dashboard';
+import { useTheme } from '@/context/ThemeContext';
+import toast from 'react-hot-toast';
 
-const CHART_DATA = [
-  { name: 'Approved', value: 75, color: '#84cc16' },
-  { name: 'Rejected', value: 15, color: '#ef4444' },
-  { name: 'Pending', value: 10, color: '#f59e0b' },
-];
+// Mock data for development
+const getMockDashboardData = (): DashboardData => ({
+  stats: {
+    urgencyCounts: { high: 8, medium: 12, low: 5, total: 25 },
+    approvalRate: 68,
+    totalDecisions: 156,
+    averageResponseTime: 24.5,
+  },
+  pendingRequests: [],
+  teamMembers: [
+    {
+      id: '1',
+      name: 'Jane Mbalame',
+      role: 'Finance Manager',
+      department: 'Finance',
+      pendingCount: 5,
+      approvedCount: 45,
+      rejectedCount: 8,
+      approvalRate: 85,
+    },
+    {
+      id: '2',
+      name: 'Peter Kumwenda',
+      role: 'Department Head',
+      department: 'Operations',
+      pendingCount: 8,
+      approvedCount: 32,
+      rejectedCount: 12,
+      approvalRate: 73,
+    },
+    {
+      id: '3',
+      name: 'Mary Phiri',
+      role: 'Finance Officer',
+      department: 'Finance',
+      pendingCount: 3,
+      approvedCount: 28,
+      rejectedCount: 5,
+      approvalRate: 85,
+    },
+    {
+      id: '4',
+      name: 'James Banda',
+      role: 'Team Lead',
+      department: 'Field Operations',
+      pendingCount: 6,
+      approvedCount: 38,
+      rejectedCount: 10,
+      approvalRate: 79,
+    },
+    {
+      id: '5',
+      name: 'Lucy Chawinga',
+      role: 'Senior Manager',
+      department: 'Administration',
+      pendingCount: 3,
+      approvedCount: 52,
+      rejectedCount: 6,
+      approvalRate: 90,
+    },
+  ],
+  recentDecisions: [
+    {
+      id: '1',
+      requestNumber: 'DSA-2024-001',
+      employeeName: 'John Doe',
+      destination: 'Lilongwe',
+      amount: 45000,
+      decision: 'approved',
+      decidedAt: new Date(Date.now() - 2 * 3600000).toISOString(),
+    },
+    {
+      id: '2',
+      requestNumber: 'DSA-2024-002',
+      employeeName: 'Jane Smith',
+      destination: 'Blantyre',
+      amount: 38000,
+      decision: 'approved',
+      decidedAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+    },
+    {
+      id: '3',
+      requestNumber: 'DSA-2024-003',
+      employeeName: 'Mike Johnson',
+      destination: 'Mzuzu',
+      amount: 52000,
+      decision: 'rejected',
+      decidedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+      comments: 'Missing travel authorization',
+    },
+    {
+      id: '4',
+      requestNumber: 'DSA-2024-004',
+      employeeName: 'Sarah Williams',
+      destination: 'Lilongwe',
+      amount: 41000,
+      decision: 'approved',
+      decidedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    },
+    {
+      id: '5',
+      requestNumber: 'DSA-2024-005',
+      employeeName: 'David Brown',
+      destination: 'Zomba',
+      amount: 35000,
+      decision: 'approved',
+      decidedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    },
+  ],
+  regionEvents: [
+    {
+      id: '1',
+      name: 'Lilongwe Office',
+      region: 'Lilongwe',
+      latitude: -13.9833,
+      longitude: 33.7833,
+      requestCount: 25,
+      pendingCount: 8,
+    },
+    {
+      id: '2',
+      name: 'Blantyre Office',
+      region: 'Blantyre',
+      latitude: -15.7861,
+      longitude: 35.0058,
+      requestCount: 18,
+      pendingCount: 5,
+    },
+    {
+      id: '3',
+      name: 'Mzuzu Office',
+      region: 'Mzuzu',
+      latitude: -11.4656,
+      longitude: 34.0207,
+      requestCount: 12,
+      pendingCount: 4,
+    },
+    {
+      id: '4',
+      name: 'Zomba Office',
+      region: 'Zomba',
+      latitude: -15.3767,
+      longitude: 35.3356,
+      requestCount: 8,
+      pendingCount: 2,
+    },
+    {
+      id: '5',
+      name: 'Mangochi Office',
+      region: 'Mangochi',
+      latitude: -14.4783,
+      longitude: 35.2645,
+      requestCount: 6,
+      pendingCount: 2,
+    },
+  ],
+});
 
-export default function ApproverDashboard() {
-  const pendingRequests = MOCK_REQUESTS.filter(r => r.status === 'Pending');
-  const highUrgencyCount = pendingRequests.filter(r => r.urgency === 'High').length;
-  const mediumUrgencyCount = pendingRequests.filter(r => r.urgency === 'Medium').length;
-  const lowUrgencyCount = pendingRequests.filter(r => r.urgency === 'Low').length;
+export default function ApproverDashboardPage() {
+  const { theme } = useTheme();
+  const router = useRouter();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [useMockData, setUseMockData] = useState(true);
+
+  const loadData = useCallback(async () => {
+    try {
+      // Using mock data for development
+      const mockData = getMockDashboardData();
+      setData(mockData);
+      setUseMockData(true);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+      const mockData = getMockDashboardData();
+      setData(mockData);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  const handleViewDecisionDetails = (decisionId: string) => {
+    router.push(`/approver/requests/${decisionId}`);
+  };
+
+  if (loading && !data) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--bg-primary)' }}
+      >
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#84cc16] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[var(--text-secondary)]">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-slide-up">
-      <header>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back, Leticia. You have {pendingRequests.length} pending requests to review.</p>
-      </header>
-
-      {/* Urgency Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* High Urgency - Red */}
-        <motion.div 
-          whileHover={{ y: -5 }} 
-          className="rounded-xl bg-white shadow-sm border border-gray-100 p-6"
-          style={{ borderLeftWidth: '4px', borderLeftColor: '#ef4444' }}
-        >
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">High Urgency</p>
-              <h3 className="text-3xl font-bold text-gray-900 mt-1">{highUrgencyCount}</h3>
-            </div>
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#fee2e2' }}>
-              <AlertCircle className="w-6 h-6" style={{ color: '#ef4444' }} />
-            </div>
-          </div>
-          <p className="text-xs mt-4 font-medium flex items-center" style={{ color: '#dc2626' }}>
-            Requires immediate attention
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Approver Dashboard</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            Manage and track DSA requests across your team
           </p>
-        </motion.div>
-
-        {/* Medium Urgency - Orange */}
-        <motion.div 
-          whileHover={{ y: -5 }} 
-          className="rounded-xl bg-white shadow-sm border border-gray-100 p-6"
-          style={{ borderLeftWidth: '4px', borderLeftColor: '#f97316' }}
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+          style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
         >
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Medium Urgency</p>
-              <h3 className="text-3xl font-bold text-gray-900 mt-1">{mediumUrgencyCount}</h3>
-            </div>
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#ffedd5' }}>
-              <Clock className="w-6 h-6" style={{ color: '#f97316' }} />
-            </div>
-          </div>
-          <p className="text-xs mt-4 font-medium flex items-center" style={{ color: '#ea580c' }}>
-            Due within 48 hours
-          </p>
-        </motion.div>
-
-        {/* Low Urgency - Blue */}
-        <motion.div 
-          whileHover={{ y: -5 }} 
-          className="rounded-xl bg-white shadow-sm border border-gray-100 p-6"
-          style={{ borderLeftWidth: '4px', borderLeftColor: '#3b82f6' }}
-        >
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Low Urgency</p>
-              <h3 className="text-3xl font-bold text-gray-900 mt-1">{lowUrgencyCount}</h3>
-            </div>
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#dbeafe' }}>
-              <Clock className="w-6 h-6" style={{ color: '#3b82f6' }} />
-            </div>
-          </div>
-          <p className="text-xs mt-4 font-medium flex items-center" style={{ color: '#2563eb' }}>
-            Standard processing time
-          </p>
-        </motion.div>
+          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+          Refresh
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Map View */}
-        <div className="lg:col-span-2 rounded-xl bg-white shadow-sm border border-gray-100 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-[#84cc16]" />
-              Events in Request Regions
-            </h3>
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">Live View</span>
-          </div>
-          <div className="relative aspect-video bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
-            <svg viewBox="0 0 800 400" className="absolute inset-0 w-full h-full opacity-20">
-              <path d="M150,100 Q200,50 300,100 T500,150 T700,100" fill="none" stroke="#84cc16" strokeWidth="2" />
-              <circle cx="200" cy="150" r="40" fill="#84cc16" opacity="0.1" />
-              <circle cx="500" cy="250" r="60" fill="#84cc16" opacity="0.1" />
-            </svg>
-            <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 p-6 w-full">
-              {['North America', 'Europe', 'Asia Pacific', 'Global'].map((region) => (
-                <div key={region} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-                  <p className="text-xs font-semibold text-gray-400 uppercase">{region}</p>
-                  <p className="text-xl font-bold text-gray-900 mt-1">
-                    {MOCK_REQUESTS.filter(r => r.region === region).length}
-                  </p>
-                  <div className="w-full bg-gray-100 h-1 rounded-full mt-2">
-                    <div 
-                      className="bg-[#84cc16] h-1 rounded-full" 
-                      style={{ width: `${(MOCK_REQUESTS.filter(r => r.region === region).length / MOCK_REQUESTS.length) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+      {/* Demo Mode Notice */}
+      {useMockData && (
+        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            ℹ️ Demo Mode - Using sample data. Connect to backend for live data.
+          </p>
+        </div>
+      )}
+
+      {/* Pending Requests Cards */}
+      {data && <PendingRequestsCard counts={data.stats.urgencyCounts} loading={loading} />}
+
+      {/* Two Column Layout */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Events Map View */}
+        {data && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <MapPin size={18} className="text-[#84cc16]" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Requests by Region
+              </h2>
             </div>
+            <EventsMapView events={data.regionEvents} loading={loading} />
           </div>
-        </div>
+        )}
 
-        {/* Donut Chart */}
-        <div className="rounded-xl bg-white shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Approval Rate</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={CHART_DATA}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {CHART_DATA.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 space-y-2">
-            {CHART_DATA.map((item) => (
-              <div key={item.name} className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span className="text-gray-600">{item.name}</span>
-                </div>
-                <span className="font-bold text-gray-900">{item.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Team Summary Table */}
-        <div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 pb-0">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#84cc16]" />
-              Team Summary
-            </h3>
-          </div>
-          <div className="overflow-x-auto p-6 pt-4">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="pb-3 text-xs font-semibold text-gray-400 uppercase">Team</th>
-                  <th className="pb-3 text-xs font-semibold text-gray-400 uppercase text-center">Pending</th>
-                  <th className="pb-3 text-xs font-semibold text-gray-400 uppercase text-center">Approved</th>
-                  <th className="pb-3 text-xs font-semibold text-gray-400 uppercase text-right">Avg. Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {MOCK_TEAM_SUMMARY.map((team) => (
-                  <tr key={team.name} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-4 font-medium text-gray-900">{team.name}</td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: '#ffedd5', color: '#ea580c' }}>{team.pending}</span>
-                    </td>
-                    <td className="py-4 text-center">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>{team.approved}</span>
-                    </td>
-                    <td className="py-4 text-right text-gray-500 text-sm">{team.avgTime}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Recent Decisions Feed */}
-        <div className="rounded-xl bg-white shadow-sm border border-gray-100 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-gray-900">Recent Decisions</h3>
-            <Link href="/approver/pending" className="text-sm font-medium text-[#84cc16] hover:underline">View All</Link>
-          </div>
-          <div className="space-y-6">
-            {MOCK_DECISIONS.map((decision) => (
-              <div key={decision.id} className="flex gap-4">
-                <div className={cn(
-                  "mt-1 w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                  decision.action === 'Approved' ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-                )}>
-                  {decision.action === 'Approved' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-                </div>
-                <div className="flex-grow">
-                  <div className="flex justify-between items-start">
-                    <h4 className="text-sm font-bold text-gray-900">
-                      {decision.action} Request {decision.requestId}
-                    </h4>
-                    <span className="text-xs text-gray-400">{new Date(decision.date).toLocaleDateString()}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1 italic">"{decision.reason}"</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-2 h-2 text-gray-500" />
-                    </div>
-                    <span className="text-[10px] font-medium text-gray-400">Approver: {decision.approver}</span>
-                  </div>
+        {/* Approval Rate Chart */}
+        {data && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={18} className="text-[#84cc16]" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Approval Performance
+              </h2>
+            </div>
+            <div
+              className="rounded-xl p-5 border text-center"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                borderColor: 'var(--border-color)',
+              }}
+            >
+              <ApprovalRateChart
+                approvalRate={data.stats.approvalRate}
+                totalDecisions={data.stats.totalDecisions}
+                loading={loading}
+              />
+              <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[var(--text-secondary)]">Avg Response Time</span>
+                  <span className="font-semibold text-[var(--text-primary)]">
+                    {data.stats.averageResponseTime} hours
+                  </span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-          <Link href="/approver/pending" className="w-full mt-8 inline-flex items-center justify-center gap-2 bg-[#84cc16] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#75b314] transition-colors">
-            Go to Approval Queue
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+        )}
       </div>
+
+      {/* Team Summary Table */}
+      {data && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Users size={18} className="text-[#84cc16]" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Team Performance</h2>
+          </div>
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderColor: 'var(--border-color)',
+            }}
+          >
+            <TeamSummaryTable members={data.teamMembers} loading={loading} />
+          </div>
+        </div>
+      )}
+
+      {/* Recent Decisions Feed */}
+      {data && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Clock size={18} className="text-[#84cc16]" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Recent Decisions</h2>
+          </div>
+          <div
+            className="rounded-xl border"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderColor: 'var(--border-color)',
+            }}
+          >
+            <RecentDecisionsFeed
+              decisions={data.recentDecisions}
+              loading={loading}
+              onViewDetails={handleViewDecisionDetails}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,293 +1,475 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, Filter, Calendar, ChevronDown, ChevronUp, 
-  AlertTriangle, MapPin, DollarSign, User, MoreVertical,
-  CheckSquare, Square, ArrowRight, Info
-} from 'lucide-react';
-import Link from 'next/link';
-import { MOCK_REQUESTS } from '@/mock/mockData';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Filter, Search, ChevronDown, CheckCircle } from 'lucide-react';
+import { PendingApprovalCard } from '@/components/approver/PendingApprovalCard';
+import { ApprovalFilterSidebar } from '@/components/approver/ApprovalFilterSidebar';
+import { BulkActionBar } from '@/components/approver/BulkActionBar';
+import { PendingRequest, FilterOptions } from '@/types/approver/pending';
+import { useTheme } from '@/context/ThemeContext';
+import toast from 'react-hot-toast';
 
-// Format currency to Malawian Kwacha (MWK)
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-MW', {
-    style: 'currency',
-    currency: 'MWK',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+// Rest of the file remains the same...
+
+// Mock data
+const getMockPendingRequests = (): PendingRequest[] => {
+  const now = new Date();
+  return [
+    {
+      id: '1',
+      requestNumber: 'DSA-2024-001',
+      employeeName: 'John Doe',
+      employeeId: 'EMP-001',
+      department: 'Finance',
+      destination: 'Lilongwe',
+      purpose: 'Audit meeting',
+      startDate: new Date(now.setDate(now.getDate() + 2)).toISOString(),
+      endDate: new Date(now.setDate(now.getDate() + 4)).toISOString(),
+      duration: 3,
+      amount: 135000,
+      perDiemRate: 45000,
+      accommodationRate: 60000,
+      submittedAt: new Date(now.setDate(now.getDate() - 3)).toISOString(),
+      daysPending: 3,
+      urgency: 'high',
+      deadline: new Date(now.setDate(now.getDate() + 1)).toISOString(),
+      hasEventAttendance: true,
+      eventDetails: {
+        id: 'evt-1',
+        name: 'Fintech Conference 2026',
+        date: new Date(now.setDate(now.getDate() + 3)).toISOString(),
+        location: 'BICC, Lilongwe',
+      },
+      travelAuthorizationRef: 'TA-2024-1234',
+    },
+    {
+      id: '2',
+      requestNumber: 'DSA-2024-002',
+      employeeName: 'Jane Smith',
+      employeeId: 'EMP-002',
+      department: 'Operations',
+      destination: 'Blantyre',
+      purpose: 'Field inspection',
+      startDate: new Date(now.setDate(now.getDate() + 5)).toISOString(),
+      endDate: new Date(now.setDate(now.getDate() + 6)).toISOString(),
+      duration: 2,
+      amount: 80000,
+      perDiemRate: 40000,
+      submittedAt: new Date(now.setDate(now.getDate() - 5)).toISOString(),
+      daysPending: 5,
+      urgency: 'medium',
+      deadline: new Date(now.setDate(now.getDate() + 3)).toISOString(),
+      hasEventAttendance: false,
+    },
+    {
+      id: '3',
+      requestNumber: 'DSA-2024-003',
+      employeeName: 'Mike Johnson',
+      employeeId: 'EMP-003',
+      department: 'HR',
+      destination: 'Mzuzu',
+      purpose: 'Staff training',
+      startDate: new Date(now.setDate(now.getDate() - 1)).toISOString(),
+      endDate: new Date(now.setDate(now.getDate() + 2)).toISOString(),
+      duration: 4,
+      amount: 152000,
+      perDiemRate: 38000,
+      accommodationRate: 55000,
+      submittedAt: new Date(now.setDate(now.getDate() - 7)).toISOString(),
+      daysPending: 7,
+      urgency: 'high',
+      deadline: new Date(now.setDate(now.getDate() - 1)).toISOString(),
+      hasEventAttendance: true,
+      eventDetails: {
+        id: 'evt-2',
+        name: 'HR Summit',
+        date: new Date(now.setDate(now.getDate() + 1)).toISOString(),
+        location: 'Mzuzu Hotel',
+      },
+      comments: 'Requesting advance payment for accommodation',
+    },
+    {
+      id: '4',
+      requestNumber: 'DSA-2024-004',
+      employeeName: 'Sarah Williams',
+      employeeId: 'EMP-004',
+      department: 'IT',
+      destination: 'Lilongwe',
+      purpose: 'Software implementation',
+      startDate: new Date(now.setDate(now.getDate() + 10)).toISOString(),
+      endDate: new Date(now.setDate(now.getDate() + 14)).toISOString(),
+      duration: 5,
+      amount: 225000,
+      perDiemRate: 45000,
+      submittedAt: new Date(now.setDate(now.getDate() - 2)).toISOString(),
+      daysPending: 2,
+      urgency: 'low',
+      deadline: new Date(now.setDate(now.getDate() + 8)).toISOString(),
+      hasEventAttendance: false,
+    },
+    {
+      id: '5',
+      requestNumber: 'DSA-2024-005',
+      employeeName: 'David Brown',
+      employeeId: 'EMP-005',
+      department: 'Field Operations',
+      destination: 'Zomba',
+      purpose: 'Site visit',
+      startDate: new Date(now.setDate(now.getDate() + 1)).toISOString(),
+      endDate: new Date(now.setDate(now.getDate() + 2)).toISOString(),
+      duration: 2,
+      amount: 70000,
+      perDiemRate: 35000,
+      submittedAt: new Date(now.setDate(now.getDate() - 1)).toISOString(),
+      daysPending: 1,
+      urgency: 'high',
+      deadline: new Date(now.setDate(now.getDate())).toISOString(),
+      hasEventAttendance: false,
+    },
+  ];
 };
 
-export default function PendingApprovals() {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+export default function PendingApprovalsPage() {
+  const { theme } = useTheme();
+  const router = useRouter();
+  const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<PendingRequest[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<string>('All');
-  const [filterUrgency, setFilterUrgency] = useState<string[]>([]);
-
-  const toggleUrgencyFilter = (urgency: string) => {
-    setFilterUrgency(prev => 
-      prev.includes(urgency) ? prev.filter(u => u !== urgency) : [...prev, urgency]
-    );
-  };
-
-  const filteredRequests = MOCK_REQUESTS.filter(req => {
-    const matchesSearch = req.requester.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         req.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === 'All' || req.type === filterType;
-    const matchesUrgency = filterUrgency.length === 0 || filterUrgency.includes(req.urgency);
-    return matchesSearch && matchesType && matchesUrgency;
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterOptions>({
+    department: '',
+    destination: '',
+    urgency: '',
+    dateRange: '',
+    minAmount: 0,
+    maxAmount: 0,
+    hasEvent: false,
   });
+  const [loading, setLoading] = useState(true);
+  const [useMockData, setUseMockData] = useState(true);
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filteredRequests.length) {
-      setSelectedIds([]);
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [requests, searchQuery, filters]);
+
+  const loadRequests = async () => {
+    setLoading(true);
+    try {
+      const mockData = getMockPendingRequests();
+      setRequests(mockData);
+      setFilteredRequests(mockData);
+      setUseMockData(true);
+    } catch (error) {
+      console.error('Failed to load requests:', error);
+      toast.error('Failed to load requests');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...requests];
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (req) =>
+          req.employeeName.toLowerCase().includes(query) ||
+          req.requestNumber.toLowerCase().includes(query) ||
+          req.department.toLowerCase().includes(query) ||
+          req.destination.toLowerCase().includes(query)
+      );
+    }
+
+    // Department filter
+    if (filters.department) {
+      filtered = filtered.filter((req) => req.department === filters.department);
+    }
+
+    // Destination filter
+    if (filters.destination) {
+      filtered = filtered.filter((req) => req.destination === filters.destination);
+    }
+
+    // Urgency filter
+    if (filters.urgency) {
+      filtered = filtered.filter((req) => req.urgency === filters.urgency);
+    }
+
+    // Date range filter
+    if (filters.dateRange) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      filtered = filtered.filter((req) => {
+        const deadline = new Date(req.deadline);
+        const deadlineDate = new Date(
+          deadline.getFullYear(),
+          deadline.getMonth(),
+          deadline.getDate()
+        );
+
+        switch (filters.dateRange) {
+          case 'today':
+            return deadlineDate.getTime() === today.getTime();
+          case 'week':
+            const weekFromNow = new Date(today);
+            weekFromNow.setDate(today.getDate() + 7);
+            return deadlineDate <= weekFromNow && deadlineDate >= today;
+          case 'month':
+            const monthFromNow = new Date(today);
+            monthFromNow.setMonth(today.getMonth() + 1);
+            return deadlineDate <= monthFromNow && deadlineDate >= today;
+          case 'overdue':
+            return deadlineDate < today;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Amount range filter
+    if (filters.minAmount > 0) {
+      filtered = filtered.filter((req) => req.amount >= filters.minAmount);
+    }
+    if (filters.maxAmount > 0) {
+      filtered = filtered.filter((req) => req.amount <= filters.maxAmount);
+    }
+
+    // Event attendance filter
+    if (filters.hasEvent) {
+      filtered = filtered.filter((req) => req.hasEventAttendance);
+    }
+
+    setFilteredRequests(filtered);
+  };
+
+  const handleSelect = (id: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(id);
+      } else {
+        newSet.delete(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredRequests.length) {
+      setSelectedIds(new Set());
     } else {
-      setSelectedIds(filteredRequests.map(r => r.id));
+      setSelectedIds(new Set(filteredRequests.map((r) => r.id)));
     }
   };
 
-  const toggleSelect = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(i => i !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
+  const handleApprove = async (id: string) => {
+    toast.success(`Request ${id} approved (demo)`);
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
+  const handleReject = async (id: string) => {
+    toast.success(`Request ${id} rejected (demo)`);
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    setSelectedIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
   };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'High': return 'text-red-600 bg-red-50 border-red-200';
-      case 'Medium': return 'text-orange-600 bg-orange-50 border-orange-200';
-      case 'Low': return 'text-blue-600 bg-blue-50 border-blue-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
+  const handleBulkApprove = () => {
+    const count = selectedIds.size;
+    toast.success(`${count} request(s) approved (demo)`);
+    setRequests((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+    setSelectedIds(new Set());
   };
 
-  return (
-    <div className="space-y-8 animate-slide-up">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Pending Approvals</h1>
-          <p className="text-gray-500 mt-1">Manage and review incoming requests from all departments.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-            <Filter className="w-4 h-4" />
-            Export CSV
-          </button>
-          <button 
-            className="inline-flex items-center gap-2 bg-[#84cc16] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#75b314] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedIds.length === 0}
-          >
-            Bulk Approve ({selectedIds.length})
-          </button>
-        </div>
-      </header>
+  const handleBulkReject = () => {
+    const count = selectedIds.size;
+    toast.success(`${count} request(s) rejected (demo)`);
+    setRequests((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+    setSelectedIds(new Set());
+  };
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar Filters */}
-        <aside className="w-full lg:w-64 shrink-0 space-y-6">
-          <div className="rounded-xl bg-white shadow-sm border border-gray-100 p-4">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Filters</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Search Request</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input 
-                    type="text" 
-                    className="w-full rounded-lg border border-gray-200 pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16] focus:border-transparent" 
-                    placeholder="ID or Requester..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Request Type</label>
-                <select 
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16] focus:border-transparent"
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                >
-                  <option value="All">All Types</option>
-                  <option value="Travel">Travel</option>
-                  <option value="Event">Event</option>
-                  <option value="Equipment">Equipment</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Urgency</label>
-                <div className="space-y-2">
-                  {['High', 'Medium', 'Low'].map(u => (
-                    <label key={u} className="flex items-center gap-2 cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        checked={filterUrgency.includes(u)}
-                        onChange={() => toggleUrgencyFilter(u)}
-                        className="rounded border-gray-300 text-[#84cc16] focus:ring-[#84cc16]" 
-                      />
-                      <span className="text-sm text-gray-600 group-hover:text-gray-900">{u}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+  const handleBulkAssign = () => {
+    toast.success(`Assigning ${selectedIds.size} request(s) to another approver (demo)`);
+  };
 
-          <div className="rounded-xl p-4 bg-[#3b5a65] text-white border-none">
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="w-4 h-4 text-[#84cc16]" />
-              <h4 className="text-sm font-bold">Pro Tip</h4>
-            </div>
-            <p className="text-xs text-gray-300 leading-relaxed">
-              Use bulk selection to approve multiple low-risk requests at once to save time.
-            </p>
-          </div>
-        </aside>
+  const handleBulkEscalate = () => {
+    toast.success(`${selectedIds.size} request(s) escalated to manager (demo)`);
+  };
 
-        {/* Main Queue */}
-        <div className="flex-grow space-y-4">
-          <div className="flex items-center justify-between px-4 py-2 bg-gray-100 rounded-lg">
-            <div className="flex items-center gap-3">
-              <button onClick={toggleSelectAll} className="text-[#3b5a65]">
-                {selectedIds.length === filteredRequests.length ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-              </button>
-              <span className="text-sm font-medium text-gray-600">Select All</span>
-            </div>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              Showing {filteredRequests.length} Requests
-            </span>
-          </div>
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
 
-          {filteredRequests.length === 0 ? (
-            <div className="rounded-xl bg-white shadow-sm border border-gray-100 p-12 text-center">
-              <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                <Search className="w-8 h-8 text-gray-300" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900">No requests found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search query.</p>
-            </div>
-          ) : (
-            filteredRequests.map((req) => (
-              <div key={req.id} className={cn(
-                "rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 border-l-4",
-                req.urgency === 'High' ? "border-red-500" : req.urgency === 'Medium' ? "border-orange-500" : "border-blue-500"
-              )}>
-                <div className="p-4 flex items-center gap-4">
-                  <button onClick={() => toggleSelect(req.id)} className="text-gray-400 hover:text-[#3b5a65]">
-                    {selectedIds.includes(req.id) ? <CheckSquare className="w-5 h-5 text-[#84cc16]" /> : <Square className="w-5 h-5" />}
-                  </button>
-                  
-                  <div className="flex-grow grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                        <User className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-900">{req.requester}</h4>
-                        <p className="text-xs text-gray-500">{req.id} • {req.team}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-gray-400 uppercase">Type</span>
-                      <span className="text-sm font-medium text-gray-900">{req.type}</span>
-                    </div>
+  const handleViewDetails = (id: string) => {
+    router.push(`/approver/requests/${id}`);
+  };
 
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-gray-400 uppercase">Amount</span>
-                      <span className="text-sm font-bold text-gray-900">{formatCurrency(req.amount)}</span>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-3">
-                      {req.hasEventAttendance && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-600">
-                          <Calendar className="w-3 h-3" />
-                          Event
-                        </span>
-                      )}
-                      <button 
-                        onClick={() => toggleExpand(req.id)}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                      >
-                        {expandedId === req.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <AnimatePresence>
-                  {expandedId === req.id && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="border-t border-gray-100 bg-gray-50 p-6"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <div>
-                            <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">Description</h5>
-                            <p className="text-sm text-gray-700 leading-relaxed">{req.description}</p>
-                          </div>
-                          <div className="flex gap-6">
-                            <div>
-                              <h5 className="text-xs font-bold text-gray-400 uppercase mb-1">Region</h5>
-                              <div className="flex items-center gap-1 text-sm text-gray-700">
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                                {req.region}
-                              </div>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-bold text-gray-400 uppercase mb-1">Deadline</h5>
-                              <div className={cn(
-                                "flex items-center gap-1 text-sm font-medium",
-                                req.urgency === 'High' ? "text-red-600" : "text-gray-700"
-                              )}>
-                                <AlertTriangle className={cn("w-4 h-4", req.urgency === 'High' ? "text-red-500" : "text-gray-400")} />
-                                {new Date(req.deadline).toLocaleDateString()}
-                                {req.urgency === 'High' && <span className="ml-1 text-[10px] uppercase font-bold">(Urgent)</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col justify-between items-end">
-                          <div className="text-right">
-                            <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">Urgency Level</h5>
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-xs font-bold border",
-                              getUrgencyColor(req.urgency)
-                            )}>
-                              {req.urgency}
-                            </span>
-                          </div>
-                          <div className="flex gap-3 mt-6">
-                            <Link href={`/approver/requests/${req.id}`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                              View Details
-                              <ArrowRight className="w-4 h-4" />
-                            </Link>
-                            <button className="bg-[#84cc16] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#75b314] transition-colors">Approve Now</button>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))
-          )}
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--bg-primary)' }}
+      >
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#84cc16] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[var(--text-secondary)]">Loading pending approvals...</p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Pending Approvals</h1>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            {filteredRequests.length} request(s) awaiting your approval
+          </p>
+        </div>
+      </div>
+
+      {/* Demo Mode Notice */}
+      {useMockData && (
+        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
+            ℹ️ Demo Mode - Using sample data. Connect to backend for live data.
+          </p>
+        </div>
+      )}
+
+      {/* Search and Filter Bar */}
+      <div className="flex gap-4">
+        <div className="flex-1 relative">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"
+          />
+          <input
+            type="text"
+            placeholder="Search by employee name, request number, department, or destination..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
+            }}
+          />
+        </div>
+
+        <button
+          onClick={() => setIsFilterOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+          style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+        >
+          <Filter size={16} />
+          Filters
+          {(filters.department ||
+            filters.destination ||
+            filters.urgency ||
+            filters.dateRange ||
+            filters.minAmount > 0 ||
+            filters.maxAmount > 0 ||
+            filters.hasEvent) && <span className="w-2 h-2 rounded-full bg-[#84cc16]" />}
+        </button>
+      </div>
+
+      {/* Select All Row */}
+      {filteredRequests.length > 0 && (
+        <div className="flex items-center gap-2 px-2">
+          <input
+            type="checkbox"
+            checked={selectedIds.size === filteredRequests.length && filteredRequests.length > 0}
+            onChange={handleSelectAll}
+            className="w-4 h-4 rounded border-gray-300 text-[#84cc16] focus:ring-[#84cc16]"
+          />
+          <span className="text-sm text-[var(--text-secondary)]">
+            Select All ({filteredRequests.length})
+          </span>
+        </div>
+      )}
+
+      {/* Requests List */}
+      <div className="space-y-4">
+        {filteredRequests.map((request) => (
+          <PendingApprovalCard
+            key={request.id}
+            request={request}
+            isSelected={selectedIds.has(request.id)}
+            onSelect={handleSelect}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onViewDetails={handleViewDetails}
+          />
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredRequests.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#84cc16]/20 flex items-center justify-center">
+            <CheckCircle size={32} className="text-[#84cc16]" />
+          </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            No Pending Approvals
+          </h3>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {searchQuery || Object.values(filters).some((v) => v)
+              ? 'Try adjusting your filters or search criteria'
+              : 'All caught up! No requests waiting for your approval.'}
+          </p>
+        </div>
+      )}
+
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onApprove={handleBulkApprove}
+        onReject={handleBulkReject}
+        onAssign={handleBulkAssign}
+        onEscalate={handleBulkEscalate}
+        onClear={handleClearSelection}
+      />
+
+      {/* Filter Sidebar */}
+      <ApprovalFilterSidebar
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        filters={filters}
+        onFilterChange={setFilters}
+        onApply={() => setIsFilterOpen(false)}
+        onReset={() => {
+          setFilters({
+            department: '',
+            destination: '',
+            urgency: '',
+            dateRange: '',
+            minAmount: 0,
+            maxAmount: 0,
+            hasEvent: false,
+          });
+        }}
+      />
     </div>
   );
 }
