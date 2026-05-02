@@ -1,8 +1,7 @@
-// src/components/finance/sidebar.tsx
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Wallet,
@@ -12,9 +11,12 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/contexts/UserContext';
+import toast from 'react-hot-toast';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/finance' },
@@ -22,6 +24,7 @@ const navItems = [
   { icon: Upload, label: 'Bulk Disbursement', path: '/finance/disbursements/bulk' },
   { icon: Layers, label: 'Batch Processing', path: '/finance/disbursements/batches' },
   { icon: PieChart, label: 'Budget Tracking', path: '/finance/budgets' },
+   { icon: User, label: 'Profile', path: '/finance/profile' },
 ];
 
 interface SidebarProps {
@@ -38,6 +41,7 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useUser();
 
   const isActive = (path: string) => pathname === path || pathname?.startsWith(path);
@@ -49,6 +53,27 @@ export default function Sidebar({
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Clear local storage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('rapid_tie_session');
+      
+      // Clear cookies
+      document.cookie.split(';').forEach(function(c) {
+        document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+      });
+      
+      toast.success('Logged out successfully');
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
   };
 
   return (
@@ -167,6 +192,23 @@ export default function Sidebar({
             </Link>
           ))}
         </nav>
+
+        {/* Logout Button */}
+        <div className="p-4 border-t" style={{ borderTopColor: 'var(--border-color)', borderTopWidth: 1 }}>
+          <button
+            onClick={handleLogout}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full hover:bg-red-50 dark:hover:bg-red-900/20',
+              isCollapsed && 'lg:justify-center'
+            )}
+            style={{ color: '#ef4444' }}
+            title={isCollapsed ? 'Logout' : undefined}
+          >
+            <LogOut size={18} className="shrink-0" />
+            {!isCollapsed && <span className="whitespace-nowrap hidden lg:inline">Logout</span>}
+            {isMobileOpen && <span className="whitespace-nowrap lg:hidden">Logout</span>}
+          </button>
+        </div>
 
         {/* Profile Section */}
         <div
