@@ -9,15 +9,9 @@ import {
   Users,
   Ticket,
   BarChart3,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
   Settings,
   Search,
-  CheckCircle,
-  MessageSquare,
-  Sparkles,
-  Eye,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,11 +25,11 @@ export function OrganizerSidebar({ isCollapsed, setIsCollapsed }: SidebarProps) 
   // Main navigation items (always visible)
   const mainNavItems = [
     { name: 'Dashboard', href: '/organizer', icon: LayoutDashboard },
-    { name: 'Discover Events', href: '/organizer/discover', icon: Search },  // ← FIXED: Now points to /organizer/discover
+    { name: 'Discover Events', href: '/events', icon: Search },
     { name: 'My Events', href: '/organizer/events', icon: Calendar },
+    { name: 'Event Management', href: '/organizer/event-management', icon: Calendar },
     { name: 'Create Event', href: '/organizer/events/create', icon: PlusCircle },
     { name: 'Analytics', href: '/organizer/analytics', icon: BarChart3 },
-    { name: 'Ticket Tiers', href: '/organizer/ticket-tiers', icon: Ticket },
     { name: 'Settings', href: '/organizer/settings', icon: Settings },
   ];
 
@@ -43,9 +37,22 @@ export function OrganizerSidebar({ isCollapsed, setIsCollapsed }: SidebarProps) 
     if (href === '/organizer') return pathname === '/organizer';
     if (href === '/organizer/events') return pathname === '/organizer/events';
     if (href === '/organizer/events/create') return pathname === '/organizer/events/create';
-    if (href === '/organizer/discover') return pathname === '/organizer/discover';
+    if (href === '/organizer/event-management') return pathname === '/organizer/event-management';
     return pathname?.startsWith(href);
   };
+
+  // Custom chevron icons
+  const ChevronLeftIcon = ({ size }: { size: number }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+
+  const ChevronRightIcon = ({ size }: { size: number }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
 
   return (
     <aside
@@ -68,7 +75,7 @@ export function OrganizerSidebar({ isCollapsed, setIsCollapsed }: SidebarProps) 
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="p-1.5 hover:bg-[var(--hover-bg)] rounded-lg text-[#84cc16] transition-colors"
         >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {isCollapsed ? <ChevronRightIcon size={18} /> : <ChevronLeftIcon size={18} />}
         </button>
       </div>
 
